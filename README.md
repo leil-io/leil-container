@@ -101,6 +101,7 @@ podman build \
 
 # Build and start all services
 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=saunafs-base:ubuntu-24.04 podman-compose up --build
+```
 
 Visit [http://localhost:29425/sfs.cgi?masterhost=master&masterport=9421](http://localhost:29425/sfs.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
 
