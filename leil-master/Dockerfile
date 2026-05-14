@@ -1,5 +1,5 @@
 
-ARG BASE_IMAGE=saunafs-base:ubuntu-24.04
+ARG BASE_IMAGE=leil-base:ubuntu-24.04
 FROM ${BASE_IMAGE}
 
 # Allow version pinning: --build-arg SAUNAFS_VERSION=5.8.0-1
@@ -19,9 +19,9 @@ ENV SAUNAFS_TEMPLATE_DIR=/opt/saunafs/templates
 RUN mkdir -p ${SAUNAFS_TEMPLATE_DIR} && \
 	cp /var/lib/saunafs/metadata.sfs.empty ${SAUNAFS_TEMPLATE_DIR}/metadata.sfs.empty
 
-COPY saunafs-master.start.sh /saunafs-master.start.sh
-RUN chmod +x /saunafs-master.start.sh
+COPY leil-master.start.sh /leil-master.start.sh
+RUN chmod +x /leil-master.start.sh
 
 EXPOSE 9419 9420 9421
 
-CMD ["/saunafs-master.start.sh"]
+CMD ["/leil-master.start.sh"]

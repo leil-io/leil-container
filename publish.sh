@@ -3,9 +3,9 @@ set -e
 
 
 usage() {
-  echo "Usage: $0 --saunafs-version <version> --distro <distro> [--registry <registry>]"
+  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--registry <registry>]"
   echo "If --registry is not provided, defaults to registry.leil.io/public"
-  echo "Example: $0 --saunafs-version 5.8.0-1 --distro 24.04"
+  echo "Example: $0 --leilfs-version 5.8.0-1 --distro 24.04"
   exit 1
 }
 
@@ -15,7 +15,7 @@ REGISTRY="registry.leil.io/public"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --saunafs-version)
+    --leilfs-version)
       SAUNAFS_VERSION="$2"
       shift 2
       ;;
@@ -38,7 +38,7 @@ if [[ -z "$SAUNAFS_VERSION" || -z "$DISTRO" ]]; then
 fi
 
 TAG_SUFFIX="ubuntu-$DISTRO"
-BASE_IMAGE="saunafs-base:ubuntu-$DISTRO"
+BASE_IMAGE="leil-base:ubuntu-$DISTRO"
 
 # Docker login if credentials are present
 if [[ -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
@@ -48,7 +48,7 @@ fi
 # 1. Build base image
 
 echo "Building base image: $BASE_IMAGE"
-docker build -t "$BASE_IMAGE" --build-arg BASE_IMAGE="ubuntu:$DISTRO" ./saunafs-base
+docker build -t "$BASE_IMAGE" --build-arg BASE_IMAGE="ubuntu:$DISTRO" ./leil-base
 
 # 2. Build and tag all component images
 
@@ -58,8 +58,8 @@ SAUNAFS_VERSION="$SAUNAFS_VERSION" TAG_SUFFIX="$TAG_SUFFIX" BASE_IMAGE="$BASE_IM
 
 # 3. Push all images to your registry
 for component in master metalogger cgiserver chunkserver client; do
-  IMAGE="saunafs-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
-  REMOTE_IMAGE="$REGISTRY/saunafs-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
+  IMAGE="leil-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
+  REMOTE_IMAGE="$REGISTRY/leil-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
   echo "Tagging $IMAGE as $REMOTE_IMAGE"
   docker tag "$IMAGE" "$REMOTE_IMAGE"
   echo "Pushing $REMOTE_IMAGE"

@@ -1,5 +1,5 @@
 
-ARG BASE_IMAGE=saunafs-base:ubuntu-24.04
+ARG BASE_IMAGE=leil-base:ubuntu-24.04
 FROM ${BASE_IMAGE}
 
 # Allow version pinning: --build-arg SAUNAFS_VERSION=5.8.0-1
@@ -13,7 +13,7 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
-COPY saunafs-client.start.sh saunafs-client.start.sh
-RUN chmod +x saunafs-client.start.sh
+COPY leil-client.start.sh leil-client.start.sh
+RUN chmod +x leil-client.start.sh
 
-ENTRYPOINT ["./saunafs-client.start.sh"]
+ENTRYPOINT ["./leil-client.start.sh"]

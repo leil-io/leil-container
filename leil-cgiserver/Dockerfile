@@ -1,5 +1,5 @@
 
-ARG BASE_IMAGE=saunafs-base:ubuntu-24.04
+ARG BASE_IMAGE=leil-base:ubuntu-24.04
 FROM ${BASE_IMAGE}
 
 # Allow version pinning: --build-arg SAUNAFS_VERSION=5.8.0-1

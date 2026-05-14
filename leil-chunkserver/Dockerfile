@@ -1,5 +1,5 @@
 
-ARG BASE_IMAGE=saunafs-base:ubuntu-24.04
+ARG BASE_IMAGE=leil-base:ubuntu-24.04
 FROM ${BASE_IMAGE}
 
 # Allow version pinning: --build-arg SAUNAFS_VERSION=5.8.0-1
@@ -13,9 +13,9 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
-COPY saunafs-chunkserver.start.sh /saunafs-chunkserver.start.sh
-RUN chmod +x /saunafs-chunkserver.start.sh
+COPY leil-chunkserver.start.sh /leil-chunkserver.start.sh
+RUN chmod +x /leil-chunkserver.start.sh
 
 EXPOSE 9422
 
-CMD ["/saunafs-chunkserver.start.sh"]
+CMD ["/leil-chunkserver.start.sh"]
