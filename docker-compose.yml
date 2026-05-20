@@ -1,12 +1,12 @@
 services:
   master:
-    image: leil-master:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-master:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-master"
     build:
       context: ./leil-master
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     ports:
       - "29421:9421"
     volumes:
@@ -17,13 +17,13 @@ services:
       - saunafsnet
 
   metalogger:
-    image: leil-metalogger:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-metalogger:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-metalogger"
     build:
       context: ./leil-metalogger
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
       - ./volumes/leil-metalogger/etc/saunafs:/etc/saunafs/
       - ./volumes/leil-metalogger/var/lib/saunafs/:/var/lib/saunafs/
@@ -34,13 +34,13 @@ services:
       - saunafsnet
 
   cgi:
-    image: leil-cgiserver:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-cgiserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-cgiserver"
     build:
       context: ./leil-cgiserver
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     ports:
       - "29425:9425"
     depends_on:
@@ -49,13 +49,13 @@ services:
       - saunafsnet
 
   chunkserver01:
-    image: leil-chunkserver:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-chunkserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-chunkserver01"
     build:
       context: ./leil-chunkserver
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
       - ./volumes/leil-chunkserver01/etc/saunafs:/etc/saunafs/
       - ./volumes/leil-chunkserver01/var/log/:/var/log/
@@ -70,13 +70,13 @@ services:
       - saunafsnet
 
   chunkserver02:
-    image: leil-chunkserver:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-chunkserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-chunkserver02"
     build:
       context: ./leil-chunkserver
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
       - ./volumes/leil-chunkserver02/etc/saunafs:/etc/saunafs/
       - ./volumes/leil-chunkserver02/var/log/:/var/log/
@@ -91,13 +91,13 @@ services:
       - saunafsnet
 
   chunkserver03:
-    image: leil-chunkserver:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-chunkserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-chunkserver03"
     build:
       context: ./leil-chunkserver
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
       - ./volumes/leil-chunkserver03/etc/saunafs:/etc/saunafs/
       - ./volumes/leil-chunkserver03/var/log/:/var/log/
@@ -113,7 +113,7 @@ services:
       - saunafsnet
 
   client:
-    image: leil-client:${SAUNAFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    image: leil-client:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
     container_name: "leil-client"
     devices:
       - /dev/fuse
@@ -125,7 +125,7 @@ services:
       context: ./leil-client
       args:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
-        SAUNAFS_VERSION: ${SAUNAFS_VERSION-}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
     command: ["/mnt/leil", "-H", "master", "-P", "9421", "-S", "/"]
     depends_on:
       - master

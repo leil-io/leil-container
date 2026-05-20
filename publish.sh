@@ -16,7 +16,7 @@ REGISTRY="registry.leil.io/public"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --leilfs-version)
-      SAUNAFS_VERSION="$2"
+      LEILFS_VERSION="$2"
       shift 2
       ;;
     --distro)
@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$SAUNAFS_VERSION" || -z "$DISTRO" ]]; then
+if [[ -z "$LEILFS_VERSION" || -z "$DISTRO" ]]; then
   usage
 fi
 
@@ -52,14 +52,20 @@ docker build -t "$BASE_IMAGE" --build-arg BASE_IMAGE="ubuntu:$DISTRO" ./leil-bas
 
 # 2. Build and tag all component images
 
-echo "Building all component images with LeilFS version $SAUNAFS_VERSION and distro $DISTRO"
-SAUNAFS_VERSION="$SAUNAFS_VERSION" TAG_SUFFIX="$TAG_SUFFIX" BASE_IMAGE="$BASE_IMAGE" docker compose build
+echo "Building all component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
+LEILFS_VERSION="$LEILFS_VERSION" TAG_SUFFIX="$TAG_SUFFIX" BASE_IMAGE="$BASE_IMAGE" docker compose build
 
 
 # 3. Push all images to your registry
 for component in master metalogger cgiserver chunkserver client; do
-  IMAGE="leil-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
-  REMOTE_IMAGE="$REGISTRY/leil-$component:$SAUNAFS_VERSION-$TAG_SUFFIX"
+  IMAGE="leil-$component:$LEILFS_VERSION-$TAG_SUFFIX"
+  if [[ "$REGISTRY" == docker.io/* || "$REGISTRY" == index.docker.io/* || "$REGISTRY" != *.*/* ]]; then
+    # Docker Hub or user/repo: use flat tag
+    REMOTE_IMAGE="$REGISTRY:leil-$component-$LEILFS_VERSION-$TAG_SUFFIX"
+  else
+    # Private registry: use nested repo
+    REMOTE_IMAGE="$REGISTRY/leil-$component:$LEILFS_VERSION-$TAG_SUFFIX"
+  fi
   echo "Tagging $IMAGE as $REMOTE_IMAGE"
   docker tag "$IMAGE" "$REMOTE_IMAGE"
   echo "Pushing $REMOTE_IMAGE"

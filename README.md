@@ -1,7 +1,29 @@
-# leilfs-container
+# leil-container
 Experimental container-based deployment cluster for [LeilFS](https://github.com/leil-io/leilfs)
 
 The ultimate goal of this repository is to bring all the advantages of containers into LeilFS project.
+
+## Official Docker Images
+
+LeilFS container images are published on Docker Hub: [leilfs/public](https://hub.docker.com/r/leilfs/public)
+
+**To pull the images:**
+
+```
+docker pull leilfs/public:leil-master-<version>-ubuntu-<distro>
+docker pull leilfs/public:leil-metalogger-<version>-ubuntu-<distro>
+docker pull leilfs/public:leil-cgiserver-<version>-ubuntu-<distro>
+docker pull leilfs/public:leil-chunkserver-<version>-ubuntu-<distro>
+docker pull leilfs/public:leil-client-<version>-ubuntu-<distro>
+```
+
+Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
+
+Example:
+
+```
+docker pull leilfs/public:leil-master-5.9.0-1-ubuntu-24.04
+```
 
 ## Warning - about testing and educational usage only
 
@@ -35,13 +57,13 @@ docker build -t leil-base:ubuntu-22.04 --build-arg BASE_IMAGE=ubuntu:22.04 ./lei
 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose up --build
 
 # For Ubuntu 24.04, pin all components to LeilFS version 5.8.0-1
-SAUNAFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose up --build
+LEILFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose up --build
 
 # For Ubuntu 22.04, latest LeilFS version (default)
 TAG_SUFFIX=ubuntu-22.04 BASE_IMAGE=leil-base:ubuntu-22.04 docker compose up --build
 
 # For Ubuntu 22.04, pin all components to LeilFS version 5.8.0-1
-SAUNAFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-22.04 BASE_IMAGE=leil-base:ubuntu-22.04 docker compose up --build
+LEILFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-22.04 BASE_IMAGE=leil-base:ubuntu-22.04 docker compose up --build
 ```
 
 All images will be tagged as e.g. `leil-master:5.8.0-1-ubuntu-24.04`, `leil-client:latest-ubuntu-22.04`, etc.
@@ -64,8 +86,8 @@ docker images | grep leil
 Clone the repository:
 
 ```shell
-git clone https://github.com/leil-io/leilfs-container.git
-cd leilfs-container
+git clone https://github.com/leil-io/leil-container.git
+cd leil-container
 ```
 
 Builds use the public LeilFS APT repository and do not require credentials.
