@@ -43,8 +43,8 @@ if [ -f "${TARGET_DATA_DIR}/metadata.sfs.lock" ]; then
 	echo "Stale '${TARGET_DATA_DIR}/metadata.sfs.lock' found."
 	echo "Removing '${TARGET_DATA_DIR}/metadata.sfs.lock'..."
 	rm -f "${TARGET_DATA_DIR}/metadata.sfs.lock"
-	echo "Attempting recovery using 'sfsmetarestore -a'..."
-	sfsmetarestore -a # This command should handle its own errors or messages.
+	echo "Attempting recovery using 'leil-metarestore -a'..."
+	leil-metarestore -a # This command should handle its own errors or messages.
 	echo "Recovery attempt finished."
 fi
 
@@ -53,5 +53,5 @@ chown -R "${SAUNAFS_USER}:${SAUNAFS_USER}" "${TARGET_CONF_DIR}"
 chown -R "${SAUNAFS_USER}:${SAUNAFS_USER}" "${TARGET_DATA_DIR}"
 
 echo "Starting LeilFS Master..."
-# Using exec to replace the shell process with sfsmaster
-exec sfsmaster -d -u
+# Using exec to replace the shell process with leil-master
+exec leil-master -d -u

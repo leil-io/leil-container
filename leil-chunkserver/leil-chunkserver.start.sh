@@ -104,4 +104,4 @@ fi
 echo "Starting LeilFS Chunkserver..."
 # Consider using su-exec to drop privileges to saunafs user if sfschunkserver doesn't do it itself
 # exec su-exec "${SAUNAFS_USER}" sfschunkserver -d -u
-exec sfschunkserver -d -u
+exec leil-chunkserver -d -u

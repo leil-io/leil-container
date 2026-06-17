@@ -5,16 +5,16 @@ The ultimate goal of this repository is to bring all the advantages of container
 
 ## Official Docker Images
 
-LeilFS container images are published on Docker Hub: [leilfs/public](https://hub.docker.com/r/leilfs/public)
+LeilFS container images are published on Docker Hub under the [leilfs](https://hub.docker.com/u/leilfs) namespace.
 
 **To pull the images:**
 
 ```
-docker pull leilfs/public:leil-master-<version>-ubuntu-<distro>
-docker pull leilfs/public:leil-metalogger-<version>-ubuntu-<distro>
-docker pull leilfs/public:leil-cgiserver-<version>-ubuntu-<distro>
-docker pull leilfs/public:leil-chunkserver-<version>-ubuntu-<distro>
-docker pull leilfs/public:leil-client-<version>-ubuntu-<distro>
+docker pull leilfs/leil-master:<version>-ubuntu-<distro>
+docker pull leilfs/leil-metalogger:<version>-ubuntu-<distro>
+docker pull leilfs/leil-cgiserver:<version>-ubuntu-<distro>
+docker pull leilfs/leil-chunkserver:<version>-ubuntu-<distro>
+docker pull leilfs/leil-client:<version>-ubuntu-<distro>
 ```
 
 Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
@@ -22,7 +22,7 @@ Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as
 Example:
 
 ```
-docker pull leilfs/public:leil-master-5.9.0-1-ubuntu-24.04
+docker pull leilfs/leil-master:5.9.0-1-ubuntu-24.04
 ```
 
 ## Warning - about testing and educational usage only

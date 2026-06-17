@@ -40,5 +40,5 @@ chown -R "${SAUNAFS_USER}:${SAUNAFS_USER}" "${TARGET_CONF_DIR}"
 chown -R "${SAUNAFS_USER}:${SAUNAFS_USER}" "${TARGET_DATA_DIR}"
 
 echo "Starting LeilFS Metalogger..."
-# Replace shell with sfsmetalogger process
-exec sfsmetalogger -d -u
+# Replace shell with leil-metalogger process
+exec leil-metalogger -d -u

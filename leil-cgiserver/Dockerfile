@@ -13,4 +13,4 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
-CMD ["/usr/bin/python3", "/usr/sbin/saunafs-cgiserver", "H", "master", "-v", "-P", "9425"]
+CMD ["/usr/bin/python3", "/usr/sbin/leil-cgiserver", "H", "master", "-v", "-P", "9425"]
