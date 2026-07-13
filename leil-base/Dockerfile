@@ -1,6 +1,7 @@
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 ARG BASE_IMAGE
+ARG LEILFS_REPOSITORY=""
 ENV BASE_IMAGE=${BASE_IMAGE}
 LABEL maintainer="hello@leil.io"
 
@@ -29,4 +30,11 @@ RUN if [ "$BASE_IMAGE" = "ubuntu:22.04" ]; then \
       echo "ERROR: Only ubuntu:22.04 or ubuntu:24.04 are supported for now." && exit 1; \
     fi && \
     BASE_IMAGE_VERSION="${BASE_IMAGE#*:}" && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/saunafs-archive-keyring.gpg] https://repo.leil.io/repository/saunafs-ubuntu-$BASE_IMAGE_VERSION/ $CODENAME main" > /etc/apt/sources.list.d/saunafs.list
+    if [ -z "$LEILFS_REPOSITORY" ]; then \
+      LEILFS_REPOSITORY="saunafs-ubuntu-$BASE_IMAGE_VERSION"; \
+    fi && \
+    case "$LEILFS_REPOSITORY" in \
+      http://*|https://*) REPOSITORY_URL="$LEILFS_REPOSITORY" ;; \
+      *) REPOSITORY_URL="https://repo.leil.io/repository/$LEILFS_REPOSITORY/" ;; \
+    esac && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/saunafs-archive-keyring.gpg] $REPOSITORY_URL $CODENAME main" > /etc/apt/sources.list.d/saunafs.list
