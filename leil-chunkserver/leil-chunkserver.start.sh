@@ -13,34 +13,34 @@ echo "Ensuring LeilFS Chunkserver directories and configurations..."
 
 mkdir -p "${TARGET_CONF_DIR}"
 
-# Copy default sfschunkserver.cfg if not present
-if [ ! -f "${TARGET_CONF_DIR}/sfschunkserver.cfg" ]; then
-	echo "'${TARGET_CONF_DIR}/sfschunkserver.cfg' not found. Copying default from '${DEFAULT_CONF_SRC_DIR}'..."
-	if [ -f "${DEFAULT_CONF_SRC_DIR}/sfschunkserver.cfg" ]; then
-		cp -v "${DEFAULT_CONF_SRC_DIR}/sfschunkserver.cfg" "${TARGET_CONF_DIR}/sfschunkserver.cfg"
+# Copy default leil-chunkserver.cfg if not present
+if [ ! -f "${TARGET_CONF_DIR}/leil-chunkserver.cfg" ]; then
+	echo "'${TARGET_CONF_DIR}/leil-chunkserver.cfg' not found. Copying default from '${DEFAULT_CONF_SRC_DIR}'..."
+	if [ -f "${DEFAULT_CONF_SRC_DIR}/leil-chunkserver.cfg" ]; then
+		cp -v "${DEFAULT_CONF_SRC_DIR}/leil-chunkserver.cfg" "${TARGET_CONF_DIR}/leil-chunkserver.cfg"
 	else
-		echo "ERROR: Default '${DEFAULT_CONF_SRC_DIR}/sfschunkserver.cfg' not found. Please check LeilFS package installation."
+		echo "ERROR: Default '${DEFAULT_CONF_SRC_DIR}/leil-chunkserver.cfg' not found. Please check LeilFS package installation."
 		exit 1
 	fi
 fi
 
 # Ensure MASTER_HOST points to the correct service name.
 # This is needed because 'master' is the hostname of the service container running the master.
-if grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/sfschunkserver.cfg"; then
-    echo "Setting MASTER_HOST to 'master' in sfschunkserver.cfg"
-    sed -i 's/^# *MASTER_HOST *= *sfsmaster/MASTER_HOST = master/' "${TARGET_CONF_DIR}/sfschunkserver.cfg"
+if grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"; then
+    echo "Setting MASTER_HOST to 'master' in leil-chunkserver.cfg"
+    sed -i 's/^# *MASTER_HOST *= *sfsmaster/MASTER_HOST = master/' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"
 fi
 
-# Always ensure a base sfshdd.cfg is present, copy from default if not there.
+# Always ensure a base leil-hdd.cfg is present, copy from default if not there.
 # The script will then overwrite it with detected/configured HDDs.
-if [ ! -f "${TARGET_CONF_DIR}/sfshdd.cfg" ]; then
-	echo "'${TARGET_CONF_DIR}/sfshdd.cfg' not found. Copying default from '${DEFAULT_CONF_SRC_DIR}'..."
-	if [ -f "${DEFAULT_CONF_SRC_DIR}/sfshdd.cfg" ]; then
-		cp -v "${DEFAULT_CONF_SRC_DIR}/sfshdd.cfg" "${TARGET_CONF_DIR}/sfshdd.cfg"
+if [ ! -f "${TARGET_CONF_DIR}/leil-hdd.cfg" ]; then
+	echo "'${TARGET_CONF_DIR}/leil-hdd.cfg' not found. Copying default from '${DEFAULT_CONF_SRC_DIR}'..."
+	if [ -f "${DEFAULT_CONF_SRC_DIR}/leil-hdd.cfg" ]; then
+		cp -v "${DEFAULT_CONF_SRC_DIR}/leil-hdd.cfg" "${TARGET_CONF_DIR}/leil-hdd.cfg"
 	else
 		# If no default, create an empty one, as chunkserver might be ok with it or we'll populate it.
-		echo "WARNING: Default '${DEFAULT_CONF_SRC_DIR}/sfshdd.cfg' not found. Creating an empty one."
-		touch "${TARGET_CONF_DIR}/sfshdd.cfg"
+		echo "WARNING: Default '${DEFAULT_CONF_SRC_DIR}/leil-hdd.cfg' not found. Creating an empty one."
+		touch "${TARGET_CONF_DIR}/leil-hdd.cfg"
 	fi
 fi
 
@@ -68,21 +68,21 @@ done < <(find /mnt -maxdepth 1 -type d -name "hdd*" -print0 2>/dev/null || true)
 
 
 if [ ${#CONFIGURED_HDD_PATHS[@]} -eq 0 ]; then
-	echo "INFO: No HDD paths matching /mnt/hdd* were found or configured. Chunkserver will start without pre-configured disks. sfshdd.cfg will be minimal."
-	# Create an empty sfshdd.cfg or ensure it's empty if no HDDs found
-	# The default example sfshdd.cfg might contain example paths, so we clear it.
-	echo "# No /mnt/hdd* paths found or configured." > "${TARGET_CONF_DIR}/sfshdd.cfg"
-	echo "# Chunkserver will start without disks, or use internal defaults if any." >> "${TARGET_CONF_DIR}/sfshdd.cfg"
+	echo "INFO: No HDD paths matching /mnt/hdd* were found or configured. Chunkserver will start without pre-configured disks. leil-hdd.cfg will be minimal."
+	# Create an empty leil-hdd.cfg or ensure it's empty if no HDDs found
+	# The default example leil-hdd.cfg might contain example paths, so we clear it.
+	echo "# No /mnt/hdd* paths found or configured." > "${TARGET_CONF_DIR}/leil-hdd.cfg"
+	echo "# Chunkserver will start without disks, or use internal defaults if any." >> "${TARGET_CONF_DIR}/leil-hdd.cfg"
 else
-	echo "Updating '${TARGET_CONF_DIR}/sfshdd.cfg' with configured HDD paths..."
-	# Clear the sfshdd.cfg and add the detected/created paths
-	> "${TARGET_CONF_DIR}/sfshdd.cfg"
+	echo "Updating '${TARGET_CONF_DIR}/leil-hdd.cfg' with configured HDD paths..."
+	# Clear the leil-hdd.cfg and add the detected/created paths
+	> "${TARGET_CONF_DIR}/leil-hdd.cfg"
 	for hdd_path in "${CONFIGURED_HDD_PATHS[@]}"; do
-		echo "${hdd_path}" >> "${TARGET_CONF_DIR}/sfshdd.cfg"
+		echo "${hdd_path}" >> "${TARGET_CONF_DIR}/leil-hdd.cfg"
 	done
 fi
-echo "Current sfshdd.cfg content:"
-cat "${TARGET_CONF_DIR}/sfshdd.cfg"
+echo "Current leil-hdd.cfg content:"
+cat "${TARGET_CONF_DIR}/leil-hdd.cfg"
 
 mkdir -p "${TARGET_DATA_DIR}"
 
@@ -102,6 +102,6 @@ if [ ${#CONFIGURED_HDD_PATHS[@]} -gt 0 ]; then
 fi
 
 echo "Starting LeilFS Chunkserver..."
-# Consider using su-exec to drop privileges to saunafs user if sfschunkserver doesn't do it itself
-# exec su-exec "${SAUNAFS_USER}" sfschunkserver -d -u
+# Consider using su-exec to drop privileges to saunafs user if leil-chunkserver doesn't do it itself
+# exec su-exec "${SAUNAFS_USER}" leil-chunkserver -d -u
 exec leil-chunkserver -d -u
