@@ -125,7 +125,7 @@ podman build \
 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 podman-compose up --build
 ```
 
-Visit [http://localhost:29425/sfs.cgi?masterhost=master&masterport=9421](http://localhost:29425/sfs.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
+Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http://localhost:29425/leil.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
 
 ## Data Persistence and Initialization
 

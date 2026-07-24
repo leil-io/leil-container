@@ -14,8 +14,8 @@ echo "Ensuring LeilFS Master directories and configurations..."
 mkdir -p "${TARGET_CONF_DIR}"
 
 # Check if main config file exists, if not, copy all defaults
-if [ ! -f "${TARGET_CONF_DIR}/sfsmaster.cfg" ]; then
-	echo "'${TARGET_CONF_DIR}/sfsmaster.cfg' not found. Copying default configurations from '${DEFAULT_CONF_SRC_DIR}'..."
+if [ ! -f "${TARGET_CONF_DIR}/leil-master.cfg" ]; then
+	echo "'${TARGET_CONF_DIR}/leil-master.cfg' not found. Copying default configurations from '${DEFAULT_CONF_SRC_DIR}'..."
 	if [ -d "${DEFAULT_CONF_SRC_DIR}" ] && [ "$(ls -A "${DEFAULT_CONF_SRC_DIR}")" ]; then
 		cp -av "${DEFAULT_CONF_SRC_DIR}/." "${TARGET_CONF_DIR}/"
 		echo "Default configurations copied."
@@ -24,7 +24,7 @@ if [ ! -f "${TARGET_CONF_DIR}/sfsmaster.cfg" ]; then
 		exit 1
 	fi
 else
-	echo "Existing '${TARGET_CONF_DIR}/sfsmaster.cfg' found."
+	echo "Existing '${TARGET_CONF_DIR}/leil-master.cfg' found."
 fi
 
 mkdir -p "${TARGET_DATA_DIR}"

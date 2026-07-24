@@ -12,24 +12,24 @@ echo "Ensuring LeilFS Metalogger directories and configurations..."
 mkdir -p "${TARGET_CONF_DIR}"
 
 # Check if main config file exists, if not, copy the default
-if [ ! -f "${TARGET_CONF_DIR}/sfsmetalogger.cfg" ]; then
-	echo "'${TARGET_CONF_DIR}/sfsmetalogger.cfg' not found. Copying default configuration from '${DEFAULT_CONF_SRC_DIR}'..."
-	if [ -f "${DEFAULT_CONF_SRC_DIR}/sfsmetalogger.cfg" ]; then
-		cp -v "${DEFAULT_CONF_SRC_DIR}/sfsmetalogger.cfg" "${TARGET_CONF_DIR}/sfsmetalogger.cfg"
-		echo "Default sfsmetalogger.cfg copied."
+if [ ! -f "${TARGET_CONF_DIR}/leil-metalogger.cfg" ]; then
+	echo "'${TARGET_CONF_DIR}/leil-metalogger.cfg' not found. Copying default configuration from '${DEFAULT_CONF_SRC_DIR}'..."
+	if [ -f "${DEFAULT_CONF_SRC_DIR}/leil-metalogger.cfg" ]; then
+		cp -v "${DEFAULT_CONF_SRC_DIR}/leil-metalogger.cfg" "${TARGET_CONF_DIR}/leil-metalogger.cfg"
+		echo "Default leil-metalogger.cfg copied."
 	else
-		echo "ERROR: Default configuration source file '${DEFAULT_CONF_SRC_DIR}/sfsmetalogger.cfg' does not exist."
+		echo "ERROR: Default configuration source file '${DEFAULT_CONF_SRC_DIR}/leil-metalogger.cfg' does not exist."
 		exit 1
 	fi
 else
-	echo "Existing '${TARGET_CONF_DIR}/sfsmetalogger.cfg' found."
+	echo "Existing '${TARGET_CONF_DIR}/leil-metalogger.cfg' found."
 fi
 
 # Ensure MASTER_HOST points to the correct service name.
 # This is needed because 'master' is the hostname of the service container running the master.
-if grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/sfsmetalogger.cfg"; then
-    echo "Setting MASTER_HOST to 'master' in sfsmetalogger.cfg"
-    sed -i 's/^# *MASTER_HOST *= *sfsmaster/MASTER_HOST = master/' "${TARGET_CONF_DIR}/sfsmetalogger.cfg"
+if grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/leil-metalogger.cfg"; then
+    echo "Setting MASTER_HOST to 'master' in leil-metalogger.cfg"
+    sed -i 's/^# *MASTER_HOST *= *sfsmaster/MASTER_HOST = master/' "${TARGET_CONF_DIR}/leil-metalogger.cfg"
 fi
 
 mkdir -p "${TARGET_DATA_DIR}"
