@@ -3,11 +3,13 @@ set -e
 
 
 usage() {
-  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>]"
+  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>] [--image-tag <tag>]"
   echo "Publishes each component image to its own Docker Hub repository."
   echo "If --hub-user is not provided, defaults to leilfs"
   echo "If --channel is not provided, defaults to stable"
+  echo "If --image-tag is not provided, the published tag defaults to the sanitized LeilFS version plus channel/distro suffix"
   echo "Example: $0 --leilfs-version 5.11.0~rc1-1 --distro 22.04 --channel staging"
+  echo "Example with a custom tag: $0 --leilfs-version 5.11.0~2026.09.18~09.59.13~branch~sha-1 --distro 24.04 --image-tag 5.11.0-dev"
   exit 1
 }
 
@@ -21,7 +23,9 @@ require_value() {
 docker_tag_value() {
   local value="$1"
   value="${value//[^a-zA-Z0-9_.-]/-}"
-  value="${value#[.-]}"
+  while [[ "$value" == [.-]* ]]; do
+    value="${value:1}"
+  done
   echo "$value"
 }
 
@@ -52,6 +56,11 @@ while [[ $# -gt 0 ]]; do
       CHANNEL="$2"
       shift 2
       ;;
+    --image-tag)
+      require_value "$@"
+      IMAGE_TAG="$2"
+      shift 2
+      ;;
     *)
       usage
       ;;
@@ -63,13 +72,24 @@ if [[ -z "$LEILFS_VERSION" || -z "$DISTRO" ]]; then
 fi
 
 DOCKER_LEILFS_VERSION="$(docker_tag_value "$LEILFS_VERSION")"
-if [[ -z "$DOCKER_LEILFS_VERSION" ]]; then
-  echo "Error: --leilfs-version does not contain any Docker tag compatible characters." >&2
+if [[ -z "$DOCKER_LEILFS_VERSION" || ${#DOCKER_LEILFS_VERSION} -gt 128 ]]; then
+  echo "Error: --leilfs-version cannot be converted to a valid Docker tag (maximum 128 characters)." >&2
   usage
 fi
 
 if [[ "$DOCKER_LEILFS_VERSION" != "$LEILFS_VERSION" ]]; then
   echo "Using LeilFS package version '$LEILFS_VERSION' and Docker tag version '$DOCKER_LEILFS_VERSION'."
+fi
+
+if [[ -n "$IMAGE_TAG" ]]; then
+  DOCKER_IMAGE_TAG="$(docker_tag_value "$IMAGE_TAG")"
+  if [[ -z "$DOCKER_IMAGE_TAG" || ${#DOCKER_IMAGE_TAG} -gt 128 ]]; then
+    echo "Error: --image-tag cannot be converted to a valid Docker tag (maximum 128 characters)." >&2
+    usage
+  fi
+  if [[ "$DOCKER_IMAGE_TAG" != "$IMAGE_TAG" ]]; then
+    echo "Using published image tag '$DOCKER_IMAGE_TAG' (sanitized from '$IMAGE_TAG')."
+  fi
 fi
 
 CHANNEL="$(echo "$CHANNEL" | xargs)"
@@ -126,9 +146,10 @@ build_channel() {
   LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
 
   # 3. Push all images to Docker Hub
+  local publish_tag="${DOCKER_IMAGE_TAG:-$DOCKER_LEILFS_VERSION-$tag_suffix}"
   for component in master metalogger cgiserver chunkserver client; do
     IMAGE="leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
-    REMOTE_IMAGE="$HUB_USER/leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
+    REMOTE_IMAGE="$HUB_USER/leil-$component:$publish_tag"
     echo "Tagging $IMAGE as $REMOTE_IMAGE"
     docker tag "$IMAGE" "$REMOTE_IMAGE"
     echo "Pushing $REMOTE_IMAGE"
