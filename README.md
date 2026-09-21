@@ -17,7 +17,7 @@ docker pull leilfs/leil-chunkserver:<version>-ubuntu-<distro>
 docker pull leilfs/leil-client:<version>-ubuntu-<distro>
 ```
 
-Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
+Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `26.04`, `24.04`, or `22.04`) as needed.
 
 Example:
 
@@ -39,11 +39,13 @@ Also some (`1GB`) free space on hdd is recommended for efficient simulation of s
 
 ## Multi-Ubuntu Build & Tagging
 
-This project supports building and running for both Ubuntu 22.04 and 24.04. All images are tagged with both the LeilFS version and the Ubuntu version for clarity (e.g. `leil-master:5.8.0-1-ubuntu-24.04`).
+This project supports building and running for Ubuntu 22.04, 24.04, and 26.04. All images are tagged with both the LeilFS version and the Ubuntu version for clarity (e.g. `leil-master:5.8.0-1-ubuntu-24.04`).
 
-### Build base images for both Ubuntu versions
+### Build base images for all Ubuntu versions
 
 ```sh
+# Ubuntu 26.04 (resolute)
+docker build -t leil-base:ubuntu-26.04 --build-arg BASE_IMAGE=ubuntu:26.04 ./leil-base
 # Ubuntu 24.04 (noble)
 docker build -t leil-base:ubuntu-24.04 --build-arg BASE_IMAGE=ubuntu:24.04 ./leil-base
 # Ubuntu 22.04 (jammy)
@@ -53,6 +55,12 @@ docker build -t leil-base:ubuntu-22.04 --build-arg BASE_IMAGE=ubuntu:22.04 ./lei
 ### Build and run the full stack for a specific Ubuntu version
 
 ```sh
+# For Ubuntu 26.04, latest LeilFS version (default)
+TAG_SUFFIX=ubuntu-26.04 BASE_IMAGE=leil-base:ubuntu-26.04 docker compose up --build
+
+# For Ubuntu 26.04, pin all components to LeilFS version 5.8.0-1
+LEILFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-26.04 BASE_IMAGE=leil-base:ubuntu-26.04 docker compose up --build
+
 # For Ubuntu 24.04, latest LeilFS version (default)
 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose up --build
 
