@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ubuntu: ["22.04", "24.04"]
+        ubuntu: ["22.04", "24.04", "26.04"]
     env:
       TAG_SUFFIX: ubuntu-${{ matrix.ubuntu }}
       BASE_IMAGE: leil-base:ubuntu-${{ matrix.ubuntu }}
