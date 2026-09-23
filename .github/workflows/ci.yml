@@ -5,8 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # Weekly run with the newest stable packages, to catch upstream changes
-  # that pull requests do not see, as they are pinned to LEILFS_VERSION.
+  # Weekly run with the newest packages from LEILFS_REPOSITORY, to catch
+  # upstream changes that pull requests do not see, as they are pinned to
+  # LEILFS_PACKAGE_VERSION.
   schedule:
     - cron: "0 6 * * 1"
 
@@ -29,17 +30,31 @@ jobs:
     env:
       TAG_SUFFIX: ubuntu-${{ matrix.ubuntu }}
       BASE_IMAGE: leil-base:ubuntu-${{ matrix.ubuntu }}
-      LEILFS_VERSION: ${{ github.event_name != 'schedule' && '5.12.0-1' || '' }}
+      # The images use the /etc/leil and /var/lib/leil paths that LeilFS
+      # 5.13 introduced, so CI installs the newest 5.13 packages. The
+      # staging repository carries release candidates as well as final
+      # releases, so the images are tested before a release is cut.
+      LEILFS_REPOSITORY: saunafs-ubuntu-${{ matrix.ubuntu }}-staging
+      LEILFS_PACKAGE_VERSION: ${{ github.event_name != 'schedule' && '5.13.*' || '' }}
     steps:
       - uses: actions/checkout@v5
 
+      # Docker tags cannot contain the '*' of a version pattern or the '~'
+      # of a pre-release version, so the images are tagged without them.
+      - name: Set the image tag version
+        run: echo "LEILFS_VERSION=$(sed -E 's/[^A-Za-z0-9_.-]+/-/g; s/[.-]+$//' <<< "$LEILFS_PACKAGE_VERSION")" >> "$GITHUB_ENV"
+
       - name: Build base image
-        run: docker build -t "$BASE_IMAGE" --build-arg BASE_IMAGE=ubuntu:${{ matrix.ubuntu }} ./leil-base
+        run: |
+          docker build -t "$BASE_IMAGE" \
+            --build-arg BASE_IMAGE=ubuntu:${{ matrix.ubuntu }} \
+            --build-arg LEILFS_REPOSITORY="$LEILFS_REPOSITORY" \
+            ./leil-base
 
       - name: Build component images
         run: |
-          docker compose build
-          docker compose -f docker-compose.uraft.yml build uraft1
+          docker compose build --build-arg LEILFS_VERSION="$LEILFS_PACKAGE_VERSION"
+          docker compose -f docker-compose.uraft.yml build --build-arg LEILFS_VERSION="$LEILFS_PACKAGE_VERSION" uraft1
 
       - name: Run smoke test
         run: ci/smoke-test.sh

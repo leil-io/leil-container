@@ -41,7 +41,7 @@ function check_monitoring() {
 
 function check_metalogger() {
 	wait_for "the metalogger to receive changelogs" \
-		docker exec leil-metalogger test -s /var/lib/saunafs/changelog_ml.sfs
+		docker exec leil-metalogger test -s /var/lib/leil/changelog_ml.sfs
 }
 
 # A second client whose mount is shared with the host. Compose does not
