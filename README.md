@@ -132,9 +132,9 @@ Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http:/
 This Docker deployment is designed for ease of use and demonstration.
 - **No Pre-committed Data**: The `volumes/` directory is no longer part of this repository.
 - **Automatic Initialization**: On first startup, each service (master, metalogger, chunkservers) will automatically:
-    - Create necessary configuration files using defaults from the LeilFS packages (found in `/usr/share/doc/saunafs-*/examples/` within the containers).
+    - Create necessary configuration files using defaults from the LeilFS packages (found in `/usr/share/doc/leil-*/examples/` within the containers).
     - Initialize their respective data directories.
-- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/saunafs/`, `/etc/saunafs/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
+- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/leil/`, `/etc/leil/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
 - **Chunkserver Storage**:
     - Chunkservers will look for mount points at `/mnt/hdd001`, `/mnt/hdd002`, etc.
     - If you provide external volumes mounted to these paths in your `docker-compose.yml`, they will be used.
@@ -144,7 +144,7 @@ This setup ensures that you can get a LeilFS cluster running quickly without man
 
 ## Cleaning Up Data
 
-If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/saunafs`), your LeilFS data will persist even after containers are stopped and removed.
+If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/leil`), your LeilFS data will persist even after containers are stopped and removed.
 
 To completely reset the LeilFS environment and start fresh, you will need to remove this persistent data. 
 
