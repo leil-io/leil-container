@@ -14,10 +14,10 @@ RUN apt-get update && \
 	rm -rf /var/lib/apt/lists/*
 
 # Define a non-volume-mapped path for templates
-ENV SAUNAFS_TEMPLATE_DIR=/opt/saunafs/templates
+ENV SAUNAFS_TEMPLATE_DIR=/opt/leil/templates
 
 RUN mkdir -p ${SAUNAFS_TEMPLATE_DIR} && \
-	cp /var/lib/saunafs/metadata.sfs.empty ${SAUNAFS_TEMPLATE_DIR}/metadata.sfs.empty
+	cp /var/lib/leil/metadata.sfs.empty ${SAUNAFS_TEMPLATE_DIR}/metadata.sfs.empty
 
 COPY leil-master.start.sh /leil-master.start.sh
 RUN chmod +x /leil-master.start.sh
