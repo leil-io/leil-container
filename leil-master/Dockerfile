@@ -4,6 +4,7 @@ FROM ${BASE_IMAGE}
 
 # Allow version pinning: --build-arg LEILFS_VERSION=5.8.0-1
 ARG LEILFS_VERSION=""
+LABEL io.leil.leilfs.version="${LEILFS_VERSION}"
 RUN apt-get update && \
 	if [ -z "$LEILFS_VERSION" ]; then \
 		apt-get install -y saunafs-master; \
