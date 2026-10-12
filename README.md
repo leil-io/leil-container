@@ -25,6 +25,21 @@ Example:
 docker pull leilfs/leil-master:5.9.0-1-ubuntu-24.04
 ```
 
+**Moving tags:**
+
+Every component also has two tags that follow new releases (Ubuntu 24.04 based):
+
+- `stable` – the newest build of the latest final release.
+- `latest` – the newest build of the latest release, including release
+  candidates. It equals `stable` unless a newer release candidate exists.
+
+```
+docker pull leilfs/leil-master:stable
+```
+
+`publish.sh` moves these tags when publishing for Ubuntu 24.04, and never
+moves them back to an older LeilFS version. Experimental builds never move them.
+
 ## Warning - about testing and educational usage only
 
 This project was created for making fast DEMOs and playground purpose.

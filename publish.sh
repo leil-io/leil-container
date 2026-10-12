@@ -8,6 +8,9 @@ usage() {
   echo "If --hub-user is not provided, defaults to leilfs"
   echo "If --channel is not provided, defaults to stable"
   echo "Example: $0 --leilfs-version 5.11.0~rc1-1 --distro 22.04 --channel staging"
+  echo "Builds for distro $FLOATING_TAG_DISTRO also move the 'stable' (final releases)"
+  echo "and 'latest' (final releases and release candidates) tags, unless they"
+  echo "already point to a newer LeilFS version."
   exit 1
 }
 
@@ -25,9 +28,67 @@ docker_tag_value() {
   echo "$value"
 }
 
+# Prints the moving tags this build may update: 'stable' only for final
+# releases, 'latest' for final releases and release candidates.
+floating_tags() {
+  if [[ "$DISTRO" != "$FLOATING_TAG_DISTRO" ]]; then
+    return
+  fi
+
+  case "$CHANNEL" in
+    stable)
+      if [[ "$LEILFS_VERSION" != *"~"* ]]; then
+        echo "stable"
+      fi
+      echo "latest"
+      ;;
+    staging)
+      echo "latest"
+      ;;
+  esac
+}
+
+# Prints the LeilFS version a published image was built from, or nothing
+# when the tag does not exist or predates the version label. Fails when
+# the registry cannot be queried, so tags never move on a guess.
+published_version() {
+  local output
+
+  if output="$(docker buildx imagetools inspect "$1" \
+    --format "{{ index .Image.Config.Labels \"$VERSION_LABEL\" }}" 2>&1)"; then
+    echo "$output"
+  elif [[ "$output" != *": not found"* ]]; then
+    echo "Error: cannot read the LeilFS version of $1: $output" >&2
+    return 1
+  fi
+}
+
+push_floating_tag() {
+  local image="$1"
+  local remote_image="$2"
+  local base_image="$3"
+  local current_version
+
+  current_version="$(published_version "$remote_image")" || exit 1
+  if [[ -n "$current_version" ]] &&
+    ! docker run --rm "$base_image" dpkg --compare-versions "$LEILFS_VERSION" ge "$current_version"; then
+    echo "Keeping $remote_image: it points to newer LeilFS version $current_version."
+    return
+  fi
+
+  echo "Tagging $image as $remote_image (was: ${current_version:-unset})"
+  docker tag "$image" "$remote_image"
+  echo "Pushing $remote_image"
+  docker push "$remote_image"
+}
+
 # Default Docker Hub user/org
 HUB_USER="leilfs"
 CHANNEL="stable"
+
+# Moving tags carry no distro, so only one distro may update them
+FLOATING_TAG_DISTRO="24.04"
+VERSION_LABEL="io.leil.leilfs.version"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -133,6 +194,10 @@ build_channel() {
     docker tag "$IMAGE" "$REMOTE_IMAGE"
     echo "Pushing $REMOTE_IMAGE"
     docker push "$REMOTE_IMAGE"
+
+    for floating_tag in $(floating_tags); do
+      push_floating_tag "$IMAGE" "$HUB_USER/leil-$component:$floating_tag" "$base_image"
+    done
   done
 }
 
