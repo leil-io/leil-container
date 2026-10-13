@@ -2,9 +2,9 @@
 
 set -e # Exit immediately if a command exits with a non-zero status.
 
-TARGET_CONF_DIR="/etc/saunafs"
-DEFAULT_CONF_SRC_DIR="/usr/share/doc/saunafs-chunkserver/examples"
-TARGET_DATA_DIR="/var/lib/saunafs" # For chunkserver's own operational data/logs, if any
+TARGET_CONF_DIR="/etc/leil"
+DEFAULT_CONF_SRC_DIR="/usr/share/doc/leil-chunkserver/examples"
+TARGET_DATA_DIR="/var/lib/leil" # For chunkserver's own operational data/logs, if any
 SAUNAFS_USER="saunafs"
 
 CONFIGURED_HDD_PATHS=()

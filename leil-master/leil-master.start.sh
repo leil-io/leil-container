@@ -2,11 +2,11 @@
 
 set -e # Exit immediately if a command exits with a non-zero status.
 
-TARGET_CONF_DIR="/etc/saunafs"
-DEFAULT_CONF_SRC_DIR="/usr/share/doc/saunafs-master/examples"
-TARGET_DATA_DIR="/var/lib/saunafs"
+TARGET_CONF_DIR="/etc/leil"
+DEFAULT_CONF_SRC_DIR="/usr/share/doc/leil-master/examples"
+TARGET_DATA_DIR="/var/lib/leil"
 # Path in the image where the Dockerfile copied the pristine metadata.sfs.empty
-IMAGE_METADATA_TEMPLATE_PATH="/opt/saunafs/templates/metadata.sfs.empty"
+IMAGE_METADATA_TEMPLATE_PATH="/opt/leil/templates/metadata.sfs.empty"
 SAUNAFS_USER="saunafs"
 
 echo "Ensuring LeilFS Master directories and configurations..."

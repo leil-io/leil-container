@@ -10,8 +10,8 @@ services:
     ports:
       - "29421:9421"
     volumes:
-      - ./volumes/leil-master/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-master/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-master/etc/leil:/etc/leil/
+      - ./volumes/leil-master/var/lib/leil/:/var/lib/leil/
       - ./volumes/leil-master/var/log/:/var/log/
     networks:
       - saunafsnet
@@ -25,8 +25,8 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
-      - ./volumes/leil-metalogger/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-metalogger/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-metalogger/etc/leil:/etc/leil/
+      - ./volumes/leil-metalogger/var/lib/leil/:/var/lib/leil/
       - ./volumes/leil-metalogger/var/log/:/var/log/
     depends_on:
       - master
@@ -57,9 +57,9 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
-      - ./volumes/leil-chunkserver01/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-chunkserver01/etc/leil:/etc/leil/
       - ./volumes/leil-chunkserver01/var/log/:/var/log/
-      - ./volumes/leil-chunkserver01/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-chunkserver01/var/lib/leil:/var/lib/leil
       - ./volumes/leil-chunkserver01/mnt/hdd001:/mnt/hdd001
       - ./volumes/leil-chunkserver01/mnt/hdd002:/mnt/hdd002
     ports:
@@ -78,9 +78,9 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
-      - ./volumes/leil-chunkserver02/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-chunkserver02/etc/leil:/etc/leil/
       - ./volumes/leil-chunkserver02/var/log/:/var/log/
-      - ./volumes/leil-chunkserver02/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-chunkserver02/var/lib/leil:/var/lib/leil
       - ./volumes/leil-chunkserver02/mnt/hdd001:/mnt/hdd001
       - ./volumes/leil-chunkserver02/mnt/hdd002:/mnt/hdd002
     ports:
@@ -99,9 +99,9 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     volumes:
-      - ./volumes/leil-chunkserver03/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-chunkserver03/etc/leil:/etc/leil/
       - ./volumes/leil-chunkserver03/var/log/:/var/log/
-      - ./volumes/leil-chunkserver03/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-chunkserver03/var/lib/leil:/var/lib/leil
       - ./volumes/leil-chunkserver03/mnt/hdd001:/mnt/hdd001
       - ./volumes/leil-chunkserver03/mnt/hdd002:/mnt/hdd002
       - ./volumes/leil-chunkserver03/mnt/hdd003:/mnt/hdd003
