@@ -9,8 +9,8 @@
 # Use the same environment variables as for 'docker compose up', e.g.:
 #   TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 ci/smoke-test.sh
 #
-# Run it against empty volumes/ directories, as it reuses whatever data
-# a previous run left there.
+# It needs a fresh volumes/ directory, so it refuses to run when a
+# previous run left data there.
 
 set -eo pipefail # Exit on command failures, including failed pipeline stages.
 
@@ -19,6 +19,11 @@ set -eo pipefail # Exit on command failures, including failed pipeline stages.
 exec 3>&2
 
 cd "$(dirname "${0}")/.."
+
+if [ -d volumes/leil-master ]; then
+	echo "FAIL: volumes/leil-master exists; remove the data a previous run left in volumes/ first" >&2
+	exit 1
+fi
 
 CHUNKSERVERS=3
 TEST_DIR="/mnt/leil/ci"

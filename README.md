@@ -160,6 +160,20 @@ TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 ci/smoke-test.sh
 ```
 
 The cluster is left running afterwards; stop it with `docker compose down`.
+The test refuses to run on data a previous run left behind. The containers
+create `volumes/` as root, so clear it with `sudo rm -rf volumes/*` before
+running it again.
+
+`publish.sh --smoke-test` runs the same test against the images it builds
+before pushing them. `--no-push` stops after building and testing, and
+`--push-only` then pushes those same images without rebuilding them.
+
+The **Publish** workflow in GitHub Actions does this for a chosen LeilFS
+version, Ubuntu version and channel. Its `publish` checkbox pushes the
+images to Docker Hub once the smoke test passes. Publishing runs in the
+`docker-hub` environment, which holds the `DOCKERHUB_USERNAME` and
+`DOCKERHUB_TOKEN` secrets and, through its protection rules, decides who
+may approve a publish and from which branch.
 
 ## Data Persistence and Initialization
 

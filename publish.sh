@@ -3,10 +3,13 @@ set -e
 
 
 usage() {
-  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>]"
+  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>] [--smoke-test] [--no-push | --push-only]"
   echo "Publishes each component image to its own Docker Hub repository."
   echo "If --hub-user is not provided, defaults to leilfs"
   echo "If --channel is not provided, defaults to stable"
+  echo "--smoke-test runs ci/smoke-test.sh against the built images before pushing"
+  echo "--no-push builds the images without logging in or pushing"
+  echo "--push-only pushes images a previous --no-push run built, without rebuilding them"
   echo "Example: $0 --leilfs-version 5.11.0~rc1-1 --distro 22.04 --channel staging"
   echo "Builds for distro $FLOATING_TAG_DISTRO also move the 'stable' (final releases)"
   echo "and 'latest' (final releases and release candidates) tags, unless they"
@@ -85,6 +88,9 @@ push_floating_tag() {
 # Default Docker Hub user/org
 HUB_USER="leilfs"
 CHANNEL="stable"
+SMOKE_TEST=false
+BUILD=true
+PUSH=true
 
 # Moving tags carry no distro, so only one distro may update them
 FLOATING_TAG_DISTRO="24.04"
@@ -113,6 +119,18 @@ while [[ $# -gt 0 ]]; do
       CHANNEL="$2"
       shift 2
       ;;
+    --smoke-test)
+      SMOKE_TEST=true
+      shift
+      ;;
+    --no-push)
+      PUSH=false
+      shift
+      ;;
+    --push-only)
+      BUILD=false
+      shift
+      ;;
     *)
       usage
       ;;
@@ -120,6 +138,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$LEILFS_VERSION" || -z "$DISTRO" ]]; then
+  usage
+fi
+
+if [[ "$BUILD" != true && ( "$PUSH" != true || "$SMOKE_TEST" == true ) ]]; then
+  echo "Error: --push-only cannot be combined with --no-push or --smoke-test." >&2
   usage
 fi
 
@@ -140,7 +163,7 @@ if [[ "$CHANNEL" != "stable" && "$CHANNEL" != "staging" && "$CHANNEL" != "experi
 fi
 
 # Docker Hub login if credentials are present
-if [[ -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
+if [[ "$PUSH" == true && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
   printf "%s\n" "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 fi
 
@@ -172,19 +195,41 @@ build_channel() {
       ;;
   esac
 
-  # 1. Build base image
+  if [[ "$BUILD" == true ]]; then
+    # 1. Build base image
 
-  echo "Building $channel base image: $base_image"
-  docker build \
-    -t "$base_image" \
-    --build-arg BASE_IMAGE="ubuntu:$DISTRO" \
-    --build-arg LEILFS_REPOSITORY="$leilfs_repository" \
-    ./leil-base
+    echo "Building $channel base image: $base_image"
+    docker build \
+      -t "$base_image" \
+      --build-arg BASE_IMAGE="ubuntu:$DISTRO" \
+      --build-arg LEILFS_REPOSITORY="$leilfs_repository" \
+      ./leil-base
 
-  # 2. Build and tag all component images
+    # 2. Build and tag all component images
 
-  echo "Building $channel component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
-  LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
+    echo "Building $channel component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
+    LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
+
+    if [[ "$SMOKE_TEST" == true ]]; then
+      echo "Running the smoke test against the $channel images"
+      LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" ci/smoke-test.sh
+      LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose down
+    fi
+  else
+    # Never rebuild here: only push the images that were built and tested
+    echo "Pushing the $channel images built by a previous run (--push-only)"
+    for component in master metalogger cgiserver chunkserver client; do
+      if ! docker image inspect "leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix" >/dev/null 2>&1; then
+        echo "Error: leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix has not been built." >&2
+        exit 1
+      fi
+    done
+  fi
+
+  if [[ "$PUSH" != true ]]; then
+    echo "Skipping the push (--no-push)."
+    return
+  fi
 
   # 3. Push all images to Docker Hub
   for component in master metalogger cgiserver chunkserver client; do
