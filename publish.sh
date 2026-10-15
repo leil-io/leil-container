@@ -3,10 +3,12 @@ set -e
 
 
 usage() {
-  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>]"
+  echo "Usage: $0 --leilfs-version <version> --distro <distro> [--hub-user <dockerhub-user>] [--channel <stable|staging|experimental>] [--smoke-test] [--no-push]"
   echo "Publishes each component image to its own Docker Hub repository."
   echo "If --hub-user is not provided, defaults to leilfs"
   echo "If --channel is not provided, defaults to stable"
+  echo "--smoke-test runs ci/smoke-test.sh against the built images before pushing"
+  echo "--no-push builds the images without logging in or pushing"
   echo "Example: $0 --leilfs-version 5.11.0~rc1-1 --distro 22.04 --channel staging"
   echo "Builds for distro $FLOATING_TAG_DISTRO also move the 'stable' (final releases)"
   echo "and 'latest' (final releases and release candidates) tags, unless they"
@@ -85,6 +87,8 @@ push_floating_tag() {
 # Default Docker Hub user/org
 HUB_USER="leilfs"
 CHANNEL="stable"
+SMOKE_TEST=false
+PUSH=true
 
 # Moving tags carry no distro, so only one distro may update them
 FLOATING_TAG_DISTRO="24.04"
@@ -113,6 +117,14 @@ while [[ $# -gt 0 ]]; do
       CHANNEL="$2"
       shift 2
       ;;
+    --smoke-test)
+      SMOKE_TEST=true
+      shift
+      ;;
+    --no-push)
+      PUSH=false
+      shift
+      ;;
     *)
       usage
       ;;
@@ -140,7 +152,7 @@ if [[ "$CHANNEL" != "stable" && "$CHANNEL" != "staging" && "$CHANNEL" != "experi
 fi
 
 # Docker Hub login if credentials are present
-if [[ -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
+if [[ "$PUSH" == true && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
   printf "%s\n" "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 fi
 
@@ -185,6 +197,17 @@ build_channel() {
 
   echo "Building $channel component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
   LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
+
+  if [[ "$SMOKE_TEST" == true ]]; then
+    echo "Running the smoke test against the $channel images"
+    LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" ci/smoke-test.sh
+    LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose down
+  fi
+
+  if [[ "$PUSH" != true ]]; then
+    echo "Skipping the push (--no-push)."
+    return
+  fi
 
   # 3. Push all images to Docker Hub
   for component in master metalogger cgiserver chunkserver client; do
