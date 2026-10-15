@@ -6,6 +6,9 @@ TARGET_CONF_DIR="/etc/saunafs"
 DEFAULT_CONF_SRC_DIR="/usr/share/doc/saunafs-chunkserver/examples"
 TARGET_DATA_DIR="/var/lib/saunafs" # For chunkserver's own operational data/logs, if any
 SAUNAFS_USER="saunafs"
+# Master address, e.g. the uRaft floating IP of an HA cluster. When set,
+# it replaces the address in the configuration on every start.
+MASTER_HOST="${MASTER_HOST:-}"
 
 CONFIGURED_HDD_PATHS=()
 
@@ -24,9 +27,15 @@ if [ ! -f "${TARGET_CONF_DIR}/leil-chunkserver.cfg" ]; then
 	fi
 fi
 
-# Ensure MASTER_HOST points to the correct service name.
-# This is needed because 'master' is the hostname of the service container running the master.
-if grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"; then
+# Ensure MASTER_HOST points to the master. Without an override, a fresh
+# configuration uses 'master', the hostname of the service container
+# running the master, and an existing one is left as it is.
+if [ -n "${MASTER_HOST}" ]; then
+    echo "Setting MASTER_HOST to '${MASTER_HOST}' in leil-chunkserver.cfg"
+    sed -i '/^[[:space:]]*MASTER_HOST[[:space:]]*=/d' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"
+    echo "MASTER_HOST = ${MASTER_HOST}" >> "${TARGET_CONF_DIR}/leil-chunkserver.cfg"
+elif ! grep -q '^[[:space:]]*MASTER_HOST[[:space:]]*=' "${TARGET_CONF_DIR}/leil-chunkserver.cfg" \
+    && grep -q '^# *MASTER_HOST *= *sfsmaster' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"; then
     echo "Setting MASTER_HOST to 'master' in leil-chunkserver.cfg"
     sed -i 's/^# *MASTER_HOST *= *sfsmaster/MASTER_HOST = master/' "${TARGET_CONF_DIR}/leil-chunkserver.cfg"
 fi
