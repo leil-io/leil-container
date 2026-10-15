@@ -1,0 +1,171 @@
+# LeilFS cluster with a highly available master managed by uRaft.
+# Start it explicitly: docker compose -f docker-compose.uraft.yml up --build
+
+# Separate from the default stack, which shares this directory
+name: leil-uraft
+
+x-uraft-node: &uraft-node
+  image: leil-uraft:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+  build:
+    context: ./leil-uraft
+    args:
+      BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+      LEILFS_VERSION: ${LEILFS_VERSION-}
+  cap_add:
+    - NET_ADMIN # Required to add and remove the floating IP
+  stop_grace_period: 2m
+
+x-uraft-env: &uraft-env
+  URAFT_NODES: 172.30.0.11,172.30.0.12,172.30.0.13
+  URAFT_FLOATING_IP: &floating-ip 172.30.0.100
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-leilfs}
+
+x-chunkserver: &chunkserver
+  image: leil-chunkserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+  build:
+    context: ./leil-chunkserver
+    args:
+      BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+      LEILFS_VERSION: ${LEILFS_VERSION-}
+  environment:
+    MASTER_HOST: *floating-ip
+  depends_on:
+    - uraft1
+    - uraft2
+    - uraft3
+  networks:
+    - saunafsnet
+
+services:
+  uraft1:
+    <<: *uraft-node
+    container_name: "leil-uraft1"
+    environment:
+      <<: *uraft-env
+      URAFT_ID: 0
+    volumes:
+      - ./volumes/leil-uraft1/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft1/var/lib/saunafs/:/var/lib/saunafs/
+    networks:
+      saunafsnet:
+        ipv4_address: 172.30.0.11
+
+  uraft2:
+    <<: *uraft-node
+    container_name: "leil-uraft2"
+    environment:
+      <<: *uraft-env
+      URAFT_ID: 1
+    volumes:
+      - ./volumes/leil-uraft2/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft2/var/lib/saunafs/:/var/lib/saunafs/
+    networks:
+      saunafsnet:
+        ipv4_address: 172.30.0.12
+
+  uraft3:
+    <<: *uraft-node
+    container_name: "leil-uraft3"
+    environment:
+      <<: *uraft-env
+      URAFT_ID: 2
+    volumes:
+      - ./volumes/leil-uraft3/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft3/var/lib/saunafs/:/var/lib/saunafs/
+    networks:
+      saunafsnet:
+        ipv4_address: 172.30.0.13
+
+  metalogger:
+    image: leil-metalogger:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    container_name: "leil-uraft-metalogger"
+    build:
+      context: ./leil-metalogger
+      args:
+        BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
+    environment:
+      MASTER_HOST: *floating-ip
+    volumes:
+      - ./volumes/leil-uraft-metalogger/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-metalogger/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-uraft-metalogger/var/log/:/var/log/
+    depends_on:
+      - uraft1
+      - uraft2
+      - uraft3
+    networks:
+      - saunafsnet
+
+  cgi:
+    image: leil-cgiserver:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    container_name: "leil-uraft-cgiserver"
+    build:
+      context: ./leil-cgiserver
+      args:
+        BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
+    ports:
+      - "29425:9425"
+    networks:
+      - saunafsnet
+
+  chunkserver01:
+    <<: *chunkserver
+    container_name: "leil-uraft-chunkserver01"
+    volumes:
+      - ./volumes/leil-uraft-chunkserver01/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver01/var/log/:/var/log/
+      - ./volumes/leil-uraft-chunkserver01/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver01/mnt/hdd001:/mnt/hdd001
+
+  chunkserver02:
+    <<: *chunkserver
+    container_name: "leil-uraft-chunkserver02"
+    volumes:
+      - ./volumes/leil-uraft-chunkserver02/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver02/var/log/:/var/log/
+      - ./volumes/leil-uraft-chunkserver02/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver02/mnt/hdd001:/mnt/hdd001
+
+  chunkserver03:
+    <<: *chunkserver
+    container_name: "leil-uraft-chunkserver03"
+    volumes:
+      - ./volumes/leil-uraft-chunkserver03/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver03/var/log/:/var/log/
+      - ./volumes/leil-uraft-chunkserver03/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver03/mnt/hdd001:/mnt/hdd001
+
+  client:
+    image: leil-client:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    container_name: "leil-uraft-client"
+    devices:
+      - /dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    build:
+      context: ./leil-client
+      args:
+        BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
+    command: ["/mnt/leil", "-H", "172.30.0.100", "-P", "9421", "-S", "/"]
+    depends_on:
+      - chunkserver01
+      - chunkserver02
+      - chunkserver03
+    volumes:
+      - ./volumes/leil-uraft-client/var/log/:/var/log/
+    networks:
+      - saunafsnet
+
+networks:
+  saunafsnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          # Dynamic addresses stay above .128, so the floating IP is never handed out
+          ip_range: 172.30.0.128/25
