@@ -142,6 +142,25 @@ TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 podman-compose up --bu
 
 Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http://localhost:29425/leil.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
 
+## Smoke Test
+
+`ci/smoke-test.sh` starts the cluster from built images, writes a file with
+goal 2, restarts the cluster, and checks that the file kept its content. It
+also checks that the CGI server lists all chunkservers and that the
+metalogger receives changelogs. GitHub Actions runs it for Ubuntu 22.04 and
+24.04 on every pull request and push to `main`, pinned to the LeilFS version
+in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
+
+To run it locally, build the base image as shown above and start from empty
+`volumes/` directories:
+
+```sh
+TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose build
+TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 ci/smoke-test.sh
+```
+
+The cluster is left running afterwards; stop it with `docker compose down`.
+
 ## Data Persistence and Initialization
 
 This Docker deployment is designed for ease of use and demonstration.
