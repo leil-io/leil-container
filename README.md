@@ -15,6 +15,7 @@ docker pull leilfs/leil-metalogger:<version>-ubuntu-<distro>
 docker pull leilfs/leil-cgiserver:<version>-ubuntu-<distro>
 docker pull leilfs/leil-chunkserver:<version>-ubuntu-<distro>
 docker pull leilfs/leil-client:<version>-ubuntu-<distro>
+docker pull leilfs/leil-uraft:<version>-ubuntu-<distro>
 ```
 
 Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
@@ -141,6 +142,59 @@ TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 podman-compose up --bu
 ```
 
 Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http://localhost:29425/leil.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
+
+## High Availability with uRaft
+
+`docker-compose.uraft.yml` runs a cluster whose master is replicated on three
+`leil-uraft` nodes. uRaft elects one node as master, keeps the others as
+shadows, and moves a floating IP (`172.30.0.100`) to whichever node leads.
+Chunkservers, metalogger and client all connect to that floating IP.
+
+```shell
+TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 \
+  docker compose -f docker-compose.uraft.yml up --build
+```
+
+It is a separate project (`leil-uraft`) with its own volumes, so a plain
+`docker compose up` never starts it. Do not run both stacks at once, as they
+publish the same CGI port.
+
+Check which node leads, and fail it over:
+
+```shell
+for n in 1 2 3; do
+  docker exec leil-uraft$n saunafs-admin metadataserver-status localhost 9421
+done
+docker stop leil-uraft1   # if it is the leader, another node takes over
+```
+
+The CGI is at [http://localhost:29425/leil.cgi?masterhost=172.30.0.100&masterport=9421](http://localhost:29425/leil.cgi?masterhost=172.30.0.100&masterport=9421).
+
+Each `leil-uraft` container is configured through environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `URAFT_ID` | required | Position of this node in `URAFT_NODES`, starting at 0 |
+| `URAFT_NODES` | required | Comma-separated addresses of all uRaft nodes |
+| `URAFT_FLOATING_IP` | required | Address clients use to reach the current master |
+| `ADMIN_PASSWORD` | required | Master admin password, used by uRaft to promote shadows |
+| `URAFT_FLOATING_NETMASK` | `255.255.255.0` | Netmask of the floating IP |
+| `URAFT_FLOATING_IFACE` | `eth0` | Interface that carries the floating IP |
+| `URAFT_ELECTOR_MODE` | `0` | `1` makes the node vote only, without running a master |
+
+These settings are written to `leil-uraft.cfg` and `leil-master.cfg` on every
+start. The containers need the `NET_ADMIN` capability to move the floating IP.
+
+Stopping a container releases the floating IP before it exits. A node that is
+killed while leading leaves the address on its interface, which only matters
+with `network_mode: host`. In that case, remove it with
+`ip addr del <floating-ip>/<prefix> dev <iface>` on that host.
+
+For a cluster across several machines, run one `leil-uraft` container per host
+with `network_mode: host`, set `URAFT_FLOATING_IFACE` to the host interface,
+and open port 9427 (UDP) between the nodes, plus 9419-9421 (TCP) to the rest
+of the cluster. Port 9428 (TCP) serves the uRaft status for monitoring. The
+floating IP must be a free address in the subnet shared by all nodes.
 
 ## Data Persistence and Initialization
 

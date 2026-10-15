@@ -185,9 +185,11 @@ build_channel() {
 
   echo "Building $channel component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
   LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
+  # All uRaft nodes share one image, so building a single node is enough
+  LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose -f docker-compose.uraft.yml build --build-arg LEILFS_VERSION="$LEILFS_VERSION" uraft1
 
   # 3. Push all images to Docker Hub
-  for component in master metalogger cgiserver chunkserver client; do
+  for component in master metalogger cgiserver chunkserver client uraft; do
     IMAGE="leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     REMOTE_IMAGE="$HUB_USER/leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     echo "Tagging $IMAGE as $REMOTE_IMAGE"
