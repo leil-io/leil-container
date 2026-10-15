@@ -1,0 +1,77 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      leilfs_version:
+        description: LeilFS package version, e.g. 5.12.0-1 or 5.13.0~rc1-1
+        required: true
+        type: string
+      distro:
+        description: Ubuntu version
+        required: true
+        type: choice
+        options: ["24.04", "22.04"]
+      channel:
+        description: LeilFS repository channel
+        required: true
+        type: choice
+        options: [stable, staging, experimental]
+      publish:
+        description: Push the images to Docker Hub when the smoke test passes
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: ${{ inputs.publish && 'Test and publish' || 'Test' }} ${{ inputs.leilfs_version }} (${{ inputs.channel }}, Ubuntu ${{ inputs.distro }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PUBLISH_ARGS: >-
+        --leilfs-version ${{ inputs.leilfs_version }}
+        --distro ${{ inputs.distro }}
+        --channel ${{ inputs.channel }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Refuse to publish from a branch other than main
+        if: inputs.publish && github.ref != 'refs/heads/main'
+        run: |
+          echo "Publishing is only allowed from main, not ${GITHUB_REF}." >&2
+          exit 1
+
+      - name: Build and run the smoke test
+        run: ./publish.sh $PUBLISH_ARGS --smoke-test --no-push
+
+      # Builds again from the layer cache of the previous step, so the
+      # pushed images are the ones that passed the smoke test.
+      - name: Push to Docker Hub
+        if: inputs.publish
+        env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: ./publish.sh $PUBLISH_ARGS
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Collect component logs
+        if: always()
+        run: sudo chmod -R a+rX volumes || true
+
+      - name: Upload component logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: volumes/*/var/log/
+          if-no-files-found: ignore

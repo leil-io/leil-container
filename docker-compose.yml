@@ -127,6 +127,8 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     command: ["/mnt/leil", "-H", "master", "-P", "9421", "-S", "/"]
+    # The mount fails when the master is not accepting connections yet
+    restart: on-failure
     depends_on:
       - master
     volumes:
