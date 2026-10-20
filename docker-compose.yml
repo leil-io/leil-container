@@ -13,6 +13,12 @@ services:
       - ./volumes/leil-master/etc/saunafs:/etc/saunafs/
       - ./volumes/leil-master/var/lib/saunafs/:/var/lib/saunafs/
       - ./volumes/leil-master/var/log/:/var/log/
+    # Healthy once the master accepts client connections
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9421"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
     networks:
       - saunafsnet
 
@@ -127,8 +133,10 @@ services:
         BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
         LEILFS_VERSION: ${LEILFS_VERSION-}
     command: ["/mnt/leil", "-H", "master", "-P", "9421", "-S", "/"]
+    # The mount fails when the master is not accepting connections yet
     depends_on:
-      - master
+      master:
+        condition: service_healthy
     volumes:
       - ./volumes/leil-client/var/log/:/var/log/
     networks:

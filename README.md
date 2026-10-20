@@ -142,6 +142,39 @@ TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 podman-compose up --bu
 
 Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http://localhost:29425/leil.cgi?masterhost=master&masterport=9421) to access the LeilFS CGI.
 
+## Smoke Test
+
+`ci/smoke-test.sh` starts the cluster from built images, writes a file with
+goal 2, restarts the cluster, and checks that the file kept its content. It
+also checks that the CGI server lists all chunkservers and that the
+metalogger receives changelogs. GitHub Actions runs it for Ubuntu 22.04 and
+24.04 on every pull request and push to `main`, pinned to the LeilFS version
+in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
+
+To run it locally, build the base image as shown above and start from empty
+`volumes/` directories:
+
+```sh
+TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose build
+TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 ci/smoke-test.sh
+```
+
+The cluster is left running afterwards; stop it with `docker compose down`.
+The test refuses to run on data a previous run left behind. The containers
+create `volumes/` as root, so clear it with `sudo rm -rf volumes/*` before
+running it again.
+
+`publish.sh --smoke-test` runs the same test against the images it builds
+before pushing them. `--no-push` stops after building and testing, and
+`--push-only` then pushes those same images without rebuilding them.
+
+The **Publish** workflow in GitHub Actions does this for a chosen LeilFS
+version, Ubuntu version and channel. Its `publish` checkbox pushes the
+images to Docker Hub once the smoke test passes. Publishing runs in the
+`docker-hub` environment, which holds the `DOCKERHUB_USERNAME` and
+`DOCKERHUB_TOKEN` secrets and, through its protection rules, decides who
+may approve a publish and from which branch.
+
 ## Data Persistence and Initialization
 
 This Docker deployment is designed for ease of use and demonstration.
