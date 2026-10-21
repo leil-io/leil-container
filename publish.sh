@@ -7,7 +7,7 @@ usage() {
   echo "Publishes each component image to its own Docker Hub repository."
   echo "If --hub-user is not provided, defaults to leilfs"
   echo "If --channel is not provided, defaults to stable"
-  echo "--smoke-test runs ci/smoke-test.sh against the built images before pushing"
+  echo "--smoke-test runs ci/smoke-test.sh and ci/uraft-test.sh against the built images before pushing"
   echo "--no-push builds the images without logging in or pushing"
   echo "--push-only pushes images a previous --no-push run built, without rebuilding them"
   echo "Example: $0 --leilfs-version 5.11.0~rc1-1 --distro 22.04 --channel staging"
@@ -209,16 +209,21 @@ build_channel() {
 
     echo "Building $channel component images with LeilFS version $LEILFS_VERSION and distro $DISTRO"
     LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose build --build-arg LEILFS_VERSION="$LEILFS_VERSION"
+    # All uRaft nodes share one image, so building a single node is enough
+    LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose -f docker-compose.uraft.yml build --build-arg LEILFS_VERSION="$LEILFS_VERSION" uraft1
 
     if [[ "$SMOKE_TEST" == true ]]; then
       echo "Running the smoke test against the $channel images"
       LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" ci/smoke-test.sh
       LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose down
+      echo "Running the uRaft test against the $channel images"
+      LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" ci/uraft-test.sh
+      LEILFS_VERSION="$DOCKER_LEILFS_VERSION" TAG_SUFFIX="$tag_suffix" BASE_IMAGE="$base_image" docker compose -f docker-compose.uraft.yml down
     fi
   else
     # Never rebuild here: only push the images that were built and tested
     echo "Pushing the $channel images built by a previous run (--push-only)"
-    for component in master metalogger cgiserver chunkserver client; do
+    for component in master metalogger cgiserver chunkserver client uraft; do
       if ! docker image inspect "leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix" >/dev/null 2>&1; then
         echo "Error: leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix has not been built." >&2
         exit 1
@@ -232,7 +237,7 @@ build_channel() {
   fi
 
   # 3. Push all images to Docker Hub
-  for component in master metalogger cgiserver chunkserver client; do
+  for component in master metalogger cgiserver chunkserver client uraft; do
     IMAGE="leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     REMOTE_IMAGE="$HUB_USER/leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     echo "Tagging $IMAGE as $REMOTE_IMAGE"
