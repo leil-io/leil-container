@@ -2,9 +2,9 @@
 
 set -e # Exit on error
 
-TARGET_CONF_DIR="/etc/saunafs"
-DEFAULT_CONF_SRC_DIR="/usr/share/doc/saunafs-metalogger/examples"
-TARGET_DATA_DIR="/var/lib/saunafs"
+TARGET_CONF_DIR="/etc/leil"
+DEFAULT_CONF_SRC_DIR="/usr/share/doc/leil-metalogger/examples"
+TARGET_DATA_DIR="/var/lib/leil"
 SAUNAFS_USER="saunafs"
 # Master address, e.g. the uRaft floating IP of an HA cluster. When set,
 # it replaces the address in the configuration on every start.
