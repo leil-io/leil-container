@@ -34,7 +34,7 @@ jobs:
     name: Test ${{ inputs.leilfs_version }} (${{ inputs.channel }}, Ubuntu ${{ inputs.distro }})
     if: ${{ !inputs.publish }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       INPUT_VERSION: ${{ inputs.leilfs_version }}
       INPUT_DISTRO: ${{ inputs.distro }}
@@ -70,7 +70,7 @@ jobs:
     name: Test and publish ${{ inputs.leilfs_version }} (${{ inputs.channel }}, Ubuntu ${{ inputs.distro }})
     if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: docker-hub
     env:
       INPUT_VERSION: ${{ inputs.leilfs_version }}

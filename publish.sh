@@ -223,7 +223,7 @@ build_channel() {
   else
     # Never rebuild here: only push the images that were built and tested
     echo "Pushing the $channel images built by a previous run (--push-only)"
-    for component in master metalogger cgiserver chunkserver client uraft; do
+    for component in master metalogger cgiserver chunkserver client uraft ganesha; do
       if ! docker image inspect "leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix" >/dev/null 2>&1; then
         echo "Error: leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix has not been built." >&2
         exit 1
@@ -237,7 +237,7 @@ build_channel() {
   fi
 
   # 3. Push all images to Docker Hub
-  for component in master metalogger cgiserver chunkserver client uraft; do
+  for component in master metalogger cgiserver chunkserver client uraft ganesha; do
     IMAGE="leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     REMOTE_IMAGE="$HUB_USER/leil-$component:$DOCKER_LEILFS_VERSION-$tag_suffix"
     echo "Tagging $IMAGE as $REMOTE_IMAGE"
