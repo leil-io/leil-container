@@ -16,6 +16,7 @@ docker pull leilfs/leil-cgiserver:<version>-ubuntu-<distro>
 docker pull leilfs/leil-chunkserver:<version>-ubuntu-<distro>
 docker pull leilfs/leil-client:<version>-ubuntu-<distro>
 docker pull leilfs/leil-uraft:<version>-ubuntu-<distro>
+docker pull leilfs/leil-ganesha:<version>-ubuntu-<distro>
 ```
 
 Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
@@ -147,8 +148,10 @@ Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http:/
 
 `ci/smoke-test.sh` starts the cluster from built images, writes a file with
 goal 2, restarts the cluster, and checks that the file kept its content. It
-also checks that the CGI server lists all chunkservers and that the
-metalogger receives changelogs. GitHub Actions runs it for Ubuntu 22.04 and
+also checks that the CGI server lists all chunkservers, that the
+metalogger receives changelogs, and that NFS-Ganesha serves LeilFS over
+NFSv4: files read the same through NFS as through the LeilFS client, both
+ways. GitHub Actions runs it for Ubuntu 22.04 and
 24.04 on every pull request and push to `main`, pinned to the LeilFS version
 in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
 
@@ -182,6 +185,70 @@ images to Docker Hub once the smoke test passes. Publishing runs in the
 `docker-hub` environment, which holds the `DOCKERHUB_USERNAME` and
 `DOCKERHUB_TOKEN` secrets and, through its protection rules, decides who
 may approve a publish and from which branch.
+
+## NFS gateway with NFS-Ganesha
+
+`leil-ganesha` is an NFS gateway: a LeilFS client, like `leil-client`, that
+exports LeilFS over NFS through the LeilFS FSAL (`saunafs-nfs-ganesha`). Like
+any LeilFS client, it gets metadata and chunk locations from the master and
+reads and writes file data directly on the chunkservers, so it must reach the
+master (port 9421) and every chunkserver at the address and data port (9422
+by default) it registers with the master. Wherever it can, it serves any
+cluster, whether the cluster runs from these images or from the packages, on
+any machine with Docker, inside or outside the cluster. Chunkservers on a
+Docker bridge register their private bridge addresses, so a gateway outside
+that bridge cannot reach them. It keeps no data, only
+the NFS clients' recovery state, so gateways can be added or replaced
+freely.
+
+The FSAL only loads into the NFS-Ganesha release it was built against, which
+Ubuntu does not ship, so the image builds that release from source:
+`leil-ganesha/ganesha-version.sh` maps the LeilFS version to it, e.g. LeilFS
+5.12 to Ganesha 9.15 and 5.13 to 15.9. The build stage is discarded; the
+image holds Ganesha, the libraries it links against, and the FSAL of the same
+LeilFS version as the other images. Use the tag of the cluster's LeilFS
+version, and move gateways to a new tag when the cluster is upgraded.
+
+To serve an existing cluster, run it with the host's network and point it at
+the master (the floating IP with uRaft):
+
+```shell
+docker run -d --name leil-ganesha --network host --restart unless-stopped \
+  -e MASTER_HOST=<master address or floating IP> \
+  -v /var/lib/leil-ganesha:/var/lib/nfs/ganesha \
+  leilfs/leil-ganesha:<version>-ubuntu-<distro>
+
+# On an NFS client
+sudo mount -t nfs4 <gateway host>:/ /mnt/leilfs
+```
+
+`docker compose up` also starts one in the demo stack, as `leil-ganesha`,
+with the NFS port published on 29049:
+
+```shell
+sudo mount -t nfs4 -o port=29049 localhost:/ /mnt/nfs
+```
+
+Without a `/etc/ganesha/ganesha.conf` of its own (mount one to change
+anything else), the container writes one exporting all of LeilFS, read-write
+and without squashing, from these environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MASTER_HOST` | `master` | LeilFS master, or the uRaft floating IP |
+| `MASTER_PORT` | `9421` | Its client port |
+| `NFS_PROTOCOLS` | `4` | `4`, `3` or `3, 4` |
+| `EXPORT_PATH` | `/` | LeilFS directory to export |
+| `PSEUDO_PATH` | `/` | Where NFSv4 clients find it |
+
+NFSv4 is the default, as it needs nothing but port 2049. NFSv3 also needs
+rpcbind (port 111) and MNT (port 20048 in the generated configuration). The
+container starts rpcbind unless one already answers, e.g. the host's with
+`--network host`. It runs no `rpc.statd`, so NFSv3 clients cannot lock files
+(NLM is off); NFSv4 has locking built in.
+
+Keep `/var/lib/nfs/ganesha` on a volume: it holds the state clients reclaim
+during the grace period after a restart.
 
 ## High Availability with uRaft
 

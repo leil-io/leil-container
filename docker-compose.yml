@@ -142,6 +142,27 @@ services:
     networks:
       - saunafsnet
 
+  ganesha:
+    image: leil-ganesha:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    container_name: "leil-ganesha"
+    build:
+      context: ./leil-ganesha
+      args:
+        BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
+    environment:
+      MASTER_HOST: master
+    ports:
+      - "29049:2049"
+    # The FSAL cannot open the export until the master accepts connections
+    depends_on:
+      master:
+        condition: service_healthy
+    volumes:
+      - ./volumes/leil-ganesha/var/lib/nfs/ganesha:/var/lib/nfs/ganesha
+    networks:
+      - saunafsnet
+
 networks:
   saunafsnet:
     driver: bridge
