@@ -7,7 +7,8 @@ function start_client() {
 	mkdir -p "${MOUNTPOINT}"
 	# The leil-mount command will be run with all provided arguments.
 	# The -f flag keeps it in the foreground, which is typical for containerized services.
-	leil-mount -f "${@}"
+	# exec makes it PID 1, so it receives SIGTERM on container stop and unmounts cleanly.
+	exec leil-mount -f "${@}"
 }
 
 # Call start_client with all script arguments
