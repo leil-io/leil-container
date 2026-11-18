@@ -17,6 +17,26 @@ function fail() {
 	exit 1
 }
 
+# Commands to run when the test exits, also after a failed check or a
+# timeout, e.g. to remove containers Compose does not manage. Register
+# them with on_exit instead of setting an EXIT trap, which would replace
+# the cleanups other checks registered.
+EXIT_CLEANUPS=()
+
+# on_exit <command>: run the command when the test exits. It may run more
+# than once, so it must not fail when there is nothing left to remove.
+function on_exit() {
+	EXIT_CLEANUPS+=("${1}")
+}
+
+function run_exit_cleanups() {
+	local cleanup
+	for cleanup in "${EXIT_CLEANUPS[@]}"; do
+		eval "${cleanup}" || true
+	done
+}
+trap run_exit_cleanups EXIT
+
 # wait_for <description> <command...>: retry the command until it succeeds.
 function wait_for() {
 	local description="${1}"

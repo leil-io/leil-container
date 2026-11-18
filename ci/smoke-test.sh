@@ -3,7 +3,8 @@
 # Smoke test for the docker compose cluster. It starts the cluster from
 # already built images, writes a file, restarts the cluster and checks
 # that the file survived, and checks that monitoring and the metalogger
-# work. The cluster is left running so its logs can be inspected; stop it
+# work, and that the client unmounts cleanly when its container stops.
+# The cluster is left running so its logs can be inspected; stop it
 # with 'docker compose down'.
 #
 # Use the same environment variables as for 'docker compose up', e.g.:
@@ -43,6 +44,78 @@ function check_metalogger() {
 		docker exec leil-metalogger test -s /var/lib/saunafs/changelog_ml.sfs
 }
 
+# A second client whose mount is shared with the host. Compose does not
+# manage it, so 'docker compose down' would leave it behind.
+HOST_CLIENT=leil-client-hostmount
+HOST_CLIENT_DIR=""
+CLIENT_IMAGE=""
+
+# Removes the second client and its mount directory. Registered with
+# on_exit, so it also runs when a check failed or timed out. A dead mount
+# it left behind is removed through the shared bind mount, as the host may
+# not allow unmounting it directly.
+function remove_host_client() {
+	docker rm -f "${HOST_CLIENT}" >/dev/null 2>&1 || true
+	[ -n "${HOST_CLIENT_DIR}" ] || return 0
+	if findmnt "${HOST_CLIENT_DIR}/mnt" >/dev/null 2>&1; then
+		docker run --rm --privileged -v "${HOST_CLIENT_DIR}:${HOST_CLIENT_DIR}:rshared" \
+			--entrypoint umount "${CLIENT_IMAGE}" -l "${HOST_CLIENT_DIR}/mnt" >/dev/null 2>&1 || true
+	fi
+	rm -rf "${HOST_CLIENT_DIR}" 2>/dev/null || true
+	HOST_CLIENT_DIR=""
+}
+
+# A client that does not get SIGTERM is killed when its container stops,
+# and leaves a dead mount behind ("Transport endpoint is not connected").
+# It only gets SIGTERM when leil-mount is PID 1, so check that the client
+# stops on SIGTERM, and that it unmounts a mount shared with the host.
+function check_client_stops_cleanly() {
+	local network code
+	CLIENT_IMAGE="$(docker inspect -f '{{.Config.Image}}' "${CLIENT}")"
+	network="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{end}}' "${CLIENT}")"
+
+	echo "Stopping ${CLIENT}..."
+	docker stop -t 30 "${CLIENT}" >/dev/null
+	code="$(docker inspect -f '{{.State.ExitCode}}' "${CLIENT}")"
+	[ "${code}" != 137 ] ||
+		fail "${CLIENT} ignored SIGTERM and was killed; leil-mount must run as PID 1"
+	echo "OK: ${CLIENT} stopped on SIGTERM (exit code ${code})"
+	docker start "${CLIENT}" >/dev/null
+	wait_for "the client to mount /mnt/leil again" client_mounted
+
+	# A second client whose mount is shared with the host, as when the
+	# container replaces a client installed on the host. Its mount only
+	# reaches the host when the mount holding the temp directory is shared
+	# and Docker runs on this host, not in a VM like Docker Desktop.
+	local tmp propagation
+	tmp="${TMPDIR:-/tmp}"
+	propagation="$(findmnt -no PROPAGATION -T "${tmp}" 2>/dev/null || true)"
+	if [[ "${propagation}" != *shared* ]]; then
+		echo "SKIP: ${tmp} is on a mount with '${propagation:-unknown}' propagation, not shared, so a client mount cannot reach the host"
+		return 0
+	fi
+	if [[ "$(docker info -f '{{.OperatingSystem}}' 2>/dev/null)" == *"Docker Desktop"* ]]; then
+		echo "SKIP: Docker Desktop runs containers in a VM, so a client mount cannot reach this host"
+		return 0
+	fi
+
+	# Remove it on every exit, including failed checks and timeouts, and
+	# remove one a previous run left behind before starting it.
+	on_exit remove_host_client
+	docker rm -f "${HOST_CLIENT}" >/dev/null 2>&1 || true
+	HOST_CLIENT_DIR="$(mktemp -d)"
+	docker run -d --name "${HOST_CLIENT}" --network "${network}" \
+		--device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
+		-v "${HOST_CLIENT_DIR}:${HOST_CLIENT_DIR}:rshared" "${CLIENT_IMAGE}" \
+		"${HOST_CLIENT_DIR}/mnt" -H "${MASTER}" -P 9421 -S / >/dev/null
+	wait_for "the host to see the mount of ${HOST_CLIENT}" findmnt "${HOST_CLIENT_DIR}/mnt"
+	docker stop -t 30 "${HOST_CLIENT}" >/dev/null
+	! findmnt "${HOST_CLIENT_DIR}/mnt" >/dev/null ||
+		fail "${HOST_CLIENT} left its mount on the host after it stopped"
+	echo "OK: ${HOST_CLIENT} removed its mount from the host when it stopped"
+	remove_host_client
+}
+
 echo "Starting the cluster..."
 docker compose up -d
 wait_for_cluster
@@ -53,6 +126,7 @@ client leil fileinfo "${TEST_FILE}"
 
 check_monitoring
 check_metalogger
+check_client_stops_cleanly
 
 echo "Restarting the cluster..."
 docker compose down
