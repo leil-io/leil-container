@@ -21,7 +21,7 @@ jobs:
   smoke-test:
     name: Smoke test (Ubuntu ${{ matrix.ubuntu }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
