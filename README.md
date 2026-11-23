@@ -147,8 +147,13 @@ Visit [http://localhost:29425/leil.cgi?masterhost=master&masterport=9421](http:/
 
 `ci/smoke-test.sh` starts the cluster from built images, writes a file with
 goal 2, restarts the cluster, and checks that the file kept its content. It
-also checks that the CGI server lists all chunkservers and that the
-metalogger receives changelogs. GitHub Actions runs it for Ubuntu 22.04 and
+also checks that the CGI server lists all chunkservers, that the
+metalogger receives changelogs, and that the client unmounts when its
+container stops, including a client whose mount is shared with the host
+(see [Client Mount on the Host](#client-mount-on-the-host)). That last
+check is skipped when the host cannot see container mounts: when the mount
+holding `$TMPDIR` is not shared, or under Docker Desktop. GitHub Actions
+runs it for Ubuntu 22.04 and
 24.04 on every pull request and push to `main`, pinned to the LeilFS version
 in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
 
@@ -246,6 +251,31 @@ directories to its own `saunafs` user. That user's uid is assigned when the
 image is built and usually differs from the host's, so never mount the data
 directory of a master installed on the host: give each container a
 directory of its own.
+
+## Client Mount on the Host
+
+The client container can also provide the mount to the host, in place of
+a client installed there. Share its mountpoint with the host; this needs a
+rootful container engine and a host whose `/` is a shared mount (check
+with `findmnt -no PROPAGATION /`):
+
+```shell
+docker run -d --name leil-client \
+  --network host --device /dev/fuse --cap-add SYS_ADMIN \
+  --security-opt apparmor:unconfined \
+  -v /mnt/leil:/mnt/leil:rshared \
+  leilfs/leil-client:stable /mnt/leil -H <master> -P 9421 -S /
+```
+
+On SELinux hosts, add `--security-opt label=disable`.
+
+Stopping the container unmounts `/mnt/leil`. A client killed without the
+chance to unmount, by the OOM killer or `docker kill`, leaves a dead mount
+on the host ("Transport endpoint is not connected"), and the container
+cannot start again until it is removed with `umount -l /mnt/leil`. When
+the container runs as a systemd service, running that command before each
+start (`ExecStartPre=-/usr/bin/umount -l /mnt/leil`) lets it recover on
+its own.
 
 ## Data Persistence and Initialization
 
