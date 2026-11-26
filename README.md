@@ -18,7 +18,7 @@ docker pull leilfs/leil-client:<version>-ubuntu-<distro>
 docker pull leilfs/leil-uraft:<version>-ubuntu-<distro>
 ```
 
-Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `24.04` or `22.04`) as needed.
+Replace `<version>` (e.g. `5.9.0-1`) and `<distro>` (e.g. `26.04`, `24.04`, or `22.04`) as needed.
 
 Example:
 
@@ -55,11 +55,13 @@ Also some (`1GB`) free space on hdd is recommended for efficient simulation of s
 
 ## Multi-Ubuntu Build & Tagging
 
-This project supports building and running for both Ubuntu 22.04 and 24.04. All images are tagged with both the LeilFS version and the Ubuntu version for clarity (e.g. `leil-master:5.8.0-1-ubuntu-24.04`).
+This project supports building and running for Ubuntu 22.04, 24.04, and 26.04. All images are tagged with both the LeilFS version and the Ubuntu version for clarity (e.g. `leil-master:5.8.0-1-ubuntu-24.04`).
 
-### Build base images for both Ubuntu versions
+### Build base images for all Ubuntu versions
 
 ```sh
+# Ubuntu 26.04 (resolute)
+docker build -t leil-base:ubuntu-26.04 --build-arg BASE_IMAGE=ubuntu:26.04 ./leil-base
 # Ubuntu 24.04 (noble)
 docker build -t leil-base:ubuntu-24.04 --build-arg BASE_IMAGE=ubuntu:24.04 ./leil-base
 # Ubuntu 22.04 (jammy)
@@ -69,6 +71,12 @@ docker build -t leil-base:ubuntu-22.04 --build-arg BASE_IMAGE=ubuntu:22.04 ./lei
 ### Build and run the full stack for a specific Ubuntu version
 
 ```sh
+# For Ubuntu 26.04, latest LeilFS version (default)
+TAG_SUFFIX=ubuntu-26.04 BASE_IMAGE=leil-base:ubuntu-26.04 docker compose up --build
+
+# For Ubuntu 26.04, pin all components to LeilFS version 5.8.0-1
+LEILFS_VERSION=5.8.0-1 TAG_SUFFIX=ubuntu-26.04 BASE_IMAGE=leil-base:ubuntu-26.04 docker compose up --build
+
 # For Ubuntu 24.04, latest LeilFS version (default)
 TAG_SUFFIX=ubuntu-24.04 BASE_IMAGE=leil-base:ubuntu-24.04 docker compose up --build
 
@@ -153,9 +161,10 @@ container stops, including a client whose mount is shared with the host
 (see [Client Mount on the Host](#client-mount-on-the-host)). That last
 check is skipped when the host cannot see container mounts: when the mount
 holding `$TMPDIR` is not shared, or under Docker Desktop. GitHub Actions
-runs it for Ubuntu 22.04 and
-24.04 on every pull request and push to `main`, pinned to the LeilFS version
-in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
+runs it for Ubuntu 22.04, 24.04 and 26.04 on every pull request and push
+to `main`, pinned to the LeilFS release series and repository in
+`.github/workflows/ci.yml`, and weekly with the newest packages from that
+repository.
 
 To run it locally, build the base image as shown above and start from empty
 `volumes/` directories:
@@ -208,7 +217,7 @@ Check which node leads, and fail it over:
 
 ```shell
 for n in 1 2 3; do
-  docker exec leil-uraft$n saunafs-admin metadataserver-status localhost 9421
+  docker exec leil-uraft$n leil-admin metadataserver-status localhost 9421
 done
 docker stop leil-uraft1   # if it is the leader, another node takes over
 ```
@@ -284,7 +293,7 @@ This Docker deployment is designed for ease of use and demonstration.
 - **Automatic Initialization**: On first startup, each service (master, metalogger, chunkservers) will automatically:
     - Create necessary configuration files using defaults from the LeilFS packages (found in `/usr/share/doc/saunafs-*/examples/` within the containers).
     - Initialize their respective data directories.
-- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/saunafs/`, `/etc/saunafs/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
+- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/leil/`, `/etc/leil/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
 - **Chunkserver Storage**:
     - Chunkservers will look for mount points at `/mnt/hdd001`, `/mnt/hdd002`, etc.
     - If you provide external volumes mounted to these paths in your `docker-compose.yml`, they will be used.
@@ -294,7 +303,7 @@ This setup ensures that you can get a LeilFS cluster running quickly without man
 
 ## Cleaning Up Data
 
-If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/saunafs`), your LeilFS data will persist even after containers are stopped and removed.
+If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/leil`), your LeilFS data will persist even after containers are stopped and removed.
 
 To completely reset the LeilFS environment and start fresh, you will need to remove this persistent data. 
 

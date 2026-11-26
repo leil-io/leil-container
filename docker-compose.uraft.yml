@@ -50,8 +50,8 @@ services:
       <<: *uraft-env
       URAFT_ID: 0
     volumes:
-      - ./volumes/leil-uraft1/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-uraft1/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-uraft1/etc/leil:/etc/leil/
+      - ./volumes/leil-uraft1/var/lib/leil/:/var/lib/leil/
     networks:
       saunafsnet:
         ipv4_address: 172.30.0.11
@@ -63,8 +63,8 @@ services:
       <<: *uraft-env
       URAFT_ID: 1
     volumes:
-      - ./volumes/leil-uraft2/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-uraft2/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-uraft2/etc/leil:/etc/leil/
+      - ./volumes/leil-uraft2/var/lib/leil/:/var/lib/leil/
     networks:
       saunafsnet:
         ipv4_address: 172.30.0.12
@@ -76,8 +76,8 @@ services:
       <<: *uraft-env
       URAFT_ID: 2
     volumes:
-      - ./volumes/leil-uraft3/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-uraft3/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-uraft3/etc/leil:/etc/leil/
+      - ./volumes/leil-uraft3/var/lib/leil/:/var/lib/leil/
     networks:
       saunafsnet:
         ipv4_address: 172.30.0.13
@@ -93,8 +93,8 @@ services:
     environment:
       MASTER_HOST: *floating-ip
     volumes:
-      - ./volumes/leil-uraft-metalogger/etc/saunafs:/etc/saunafs/
-      - ./volumes/leil-uraft-metalogger/var/lib/saunafs/:/var/lib/saunafs/
+      - ./volumes/leil-uraft-metalogger/etc/leil:/etc/leil/
+      - ./volumes/leil-uraft-metalogger/var/lib/leil/:/var/lib/leil/
       - ./volumes/leil-uraft-metalogger/var/log/:/var/log/
     depends_on:
       - uraft1
@@ -120,27 +120,27 @@ services:
     <<: *chunkserver
     container_name: "leil-uraft-chunkserver01"
     volumes:
-      - ./volumes/leil-uraft-chunkserver01/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver01/etc/leil:/etc/leil/
       - ./volumes/leil-uraft-chunkserver01/var/log/:/var/log/
-      - ./volumes/leil-uraft-chunkserver01/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver01/var/lib/leil:/var/lib/leil
       - ./volumes/leil-uraft-chunkserver01/mnt/hdd001:/mnt/hdd001
 
   chunkserver02:
     <<: *chunkserver
     container_name: "leil-uraft-chunkserver02"
     volumes:
-      - ./volumes/leil-uraft-chunkserver02/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver02/etc/leil:/etc/leil/
       - ./volumes/leil-uraft-chunkserver02/var/log/:/var/log/
-      - ./volumes/leil-uraft-chunkserver02/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver02/var/lib/leil:/var/lib/leil
       - ./volumes/leil-uraft-chunkserver02/mnt/hdd001:/mnt/hdd001
 
   chunkserver03:
     <<: *chunkserver
     container_name: "leil-uraft-chunkserver03"
     volumes:
-      - ./volumes/leil-uraft-chunkserver03/etc/saunafs:/etc/saunafs/
+      - ./volumes/leil-uraft-chunkserver03/etc/leil:/etc/leil/
       - ./volumes/leil-uraft-chunkserver03/var/log/:/var/log/
-      - ./volumes/leil-uraft-chunkserver03/var/lib/saunafs:/var/lib/saunafs
+      - ./volumes/leil-uraft-chunkserver03/var/lib/leil:/var/lib/leil
       - ./volumes/leil-uraft-chunkserver03/mnt/hdd001:/mnt/hdd001
 
   client:
