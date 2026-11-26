@@ -154,8 +154,9 @@ container stops, including a client whose mount is shared with the host
 check is skipped when the host cannot see container mounts: when the mount
 holding `$TMPDIR` is not shared, or under Docker Desktop. GitHub Actions
 runs it for Ubuntu 22.04 and
-24.04 on every pull request and push to `main`, pinned to the LeilFS version
-in `.github/workflows/ci.yml`, and weekly with the newest stable packages.
+24.04 on every pull request and push to `main`, pinned to the LeilFS release
+series and repository in `.github/workflows/ci.yml`, and weekly with the
+newest packages from that repository.
 
 To run it locally, build the base image as shown above and start from empty
 `volumes/` directories:
@@ -208,7 +209,7 @@ Check which node leads, and fail it over:
 
 ```shell
 for n in 1 2 3; do
-  docker exec leil-uraft$n saunafs-admin metadataserver-status localhost 9421
+  docker exec leil-uraft$n leil-admin metadataserver-status localhost 9421
 done
 docker stop leil-uraft1   # if it is the leader, another node takes over
 ```
@@ -284,7 +285,7 @@ This Docker deployment is designed for ease of use and demonstration.
 - **Automatic Initialization**: On first startup, each service (master, metalogger, chunkservers) will automatically:
     - Create necessary configuration files using defaults from the LeilFS packages (found in `/usr/share/doc/saunafs-*/examples/` within the containers).
     - Initialize their respective data directories.
-- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/saunafs/`, `/etc/saunafs/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
+- **Persistent Data**: If you map Docker volumes to the standard LeilFS data and configuration paths (e.g., `/var/lib/leil/`, `/etc/leil/`), your data and custom configurations will persist across container restarts. If these mapped volumes are empty on first start, they will be initialized as described above.
 - **Chunkserver Storage**:
     - Chunkservers will look for mount points at `/mnt/hdd001`, `/mnt/hdd002`, etc.
     - If you provide external volumes mounted to these paths in your `docker-compose.yml`, they will be used.
@@ -294,7 +295,7 @@ This setup ensures that you can get a LeilFS cluster running quickly without man
 
 ## Cleaning Up Data
 
-If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/saunafs`), your LeilFS data will persist even after containers are stopped and removed.
+If you have used Docker named volumes or host-mounted directories (e.g., by customizing `docker-compose.yml` to map local paths like `./volumes/master/data:/var/lib/leil`), your LeilFS data will persist even after containers are stopped and removed.
 
 To completely reset the LeilFS environment and start fresh, you will need to remove this persistent data. 
 
