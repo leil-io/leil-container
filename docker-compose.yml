@@ -142,6 +142,32 @@ services:
     networks:
       - saunafsnet
 
+  nfs-ganesha:
+    image: leil-nfs-ganesha:${LEILFS_VERSION:-latest}-${TAG_SUFFIX:-ubuntu-24.04}
+    container_name: "leil-nfs-ganesha"
+    build:
+      context: ./leil-nfs-ganesha
+      args:
+        BASE_IMAGE: ${BASE_IMAGE-leil-base:ubuntu-24.04}
+        LEILFS_VERSION: ${LEILFS_VERSION-}
+    environment:
+      MASTER_HOST: master
+      # Any host that reaches the published port, for the demo
+      NFS_CLIENTS: "*"
+    # Ganesha exits when it cannot create the export, e.g. while the
+    # master is unreachable, so that it is retried
+    restart: unless-stopped
+    ports:
+      - "29049:2049"
+    # The FSAL cannot open the export until the master accepts connections
+    depends_on:
+      master:
+        condition: service_healthy
+    volumes:
+      - ./volumes/leil-nfs-ganesha/var/lib/nfs/ganesha:/var/lib/nfs/ganesha
+    networks:
+      - saunafsnet
+
 networks:
   saunafsnet:
     driver: bridge
